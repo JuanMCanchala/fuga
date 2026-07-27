@@ -370,8 +370,14 @@ if(reduce){frame()}else{const io=new IntersectionObserver(function(es){es.forEac
 
 // === INTERSECTION OBSERVER ===
 (function(){
-const obs=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}})},{threshold:0.12});
-document.querySelectorAll('.fade-in').forEach(el=>obs.observe(el))
+// Revelado robusto: en carga (lo que está en vista), al hacer scroll, y una red
+// de seguridad final. Nunca deja contenido oculto tras un fallo del observer.
+var els=[].slice.call(document.querySelectorAll('.fade-in'));
+function reveal(){var vh=window.innerHeight;els=els.filter(function(el){var r=el.getBoundingClientRect();if(r.top<vh*0.92){el.classList.add('visible');return false}return true})}
+reveal();
+window.addEventListener('scroll',reveal,{passive:true});
+window.addEventListener('resize',reveal);
+setTimeout(function(){els.forEach(function(el){el.classList.add('visible')})},2000);
 })();
 
 // === COMMAND CENTER ===
