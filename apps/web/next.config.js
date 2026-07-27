@@ -8,7 +8,9 @@ const nextConfig = {
   // la URL. El command center llama a /api/analyze en el mismo origen.
   async rewrites() {
     return {
-      beforeFiles: [{ source: '/', destination: '/site.html' }],
+      // La raíz sirve el sitio claro profesional. El tema oscuro sigue accesible
+      // en /site.html como alternativa.
+      beforeFiles: [{ source: '/', destination: '/site-light.html' }],
     };
   },
 };
