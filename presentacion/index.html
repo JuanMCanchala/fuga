@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FUGA — Demuestra, repara y verifica fugas de datos en Firestore</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0b0e14;--panel:#121722;--accent:#7c5cff;--accent-light:#a78bfa;
+  --text:#e6ebf2;--danger:#ff5c72;--ok:#37d399;--text-muted:#8892a4;
+  --radius:12px;--max-w:1100px;
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:system-ui,-apple-system,sans-serif;
+  background:var(--bg);color:var(--text);
+  line-height:1.6;overflow-x:hidden;
+}
+a{color:var(--accent-light);text-decoration:none;transition:color .2s}
+a:hover{color:#fff}
+
+.container{max-width:var(--max-w);margin:0 auto;padding:0 1.5rem}
+
+/* HERO */
+.hero{
+  min-height:90vh;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;
+  padding:4rem 1.5rem;
+  animation:fadeIn .8s ease-out;
+}
+.hero-logo{
+  font-size:4.5rem;font-weight:900;letter-spacing:-.03em;
+  background:linear-gradient(135deg,var(--accent),var(--accent-light));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  margin-bottom:1rem;
+}
+.hero-tagline{
+  font-size:1.25rem;color:var(--text-muted);max-width:640px;
+  margin-bottom:2.5rem;
+}
+.hero-buttons{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center}
+.btn{
+  display:inline-flex;align-items:center;gap:.5rem;
+  padding:.75rem 1.75rem;border-radius:8px;font-weight:600;
+  font-size:1rem;transition:transform .15s,box-shadow .2s;
+  border:none;cursor:pointer;
+}
+.btn:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(124,92,255,.35)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-secondary{background:var(--panel);color:var(--text);border:1px solid #2a3040}
+
+/* SECTIONS */
+section{padding:5rem 0}
+.section-title{
+  font-size:2rem;font-weight:800;margin-bottom:.75rem;
+  text-align:center;
+}
+.section-subtitle{
+  text-align:center;color:var(--text-muted);max-width:700px;
+  margin:0 auto 3rem;font-size:1.05rem;
+}
+
+/* PROBLEM */
+.problem-card{
+  background:var(--panel);border:1px solid #1e2636;border-radius:var(--radius);
+  padding:2.5rem;max-width:800px;margin:0 auto;
+  position:relative;overflow:hidden;
+}
+.problem-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--danger),transparent);
+}
+.problem-card p{margin-bottom:1rem;color:var(--text-muted)}
+.problem-card strong{color:var(--danger)}
+
+/* STEPS */
+.steps-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:1.5rem;
+}
+.step-card{
+  background:var(--panel);border:1px solid #1e2636;border-radius:var(--radius);
+  padding:2rem;position:relative;overflow:hidden;
+  transition:transform .2s,border-color .2s;
+}
+.step-card:hover{transform:translateY(-4px);border-color:var(--accent)}
+.step-number{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:36px;height:36px;border-radius:50%;
+  background:var(--accent);color:#fff;font-weight:700;
+  font-size:.9rem;margin-bottom:1rem;
+}
+.step-card h3{font-size:1.1rem;margin-bottom:.5rem}
+.step-card p{font-size:.9rem;color:var(--text-muted)}
+
+.differentiator{
+  text-align:center;margin-top:2.5rem;
+  padding:1.25rem 2rem;border-radius:var(--radius);
+  background:rgba(124,92,255,.08);border:1px solid rgba(124,92,255,.25);
+  font-weight:600;color:var(--accent-light);
+}
+
+/* CODE COMPARE */
+.code-compare{
+  display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;
+  margin-top:3rem;max-width:900px;margin-left:auto;margin-right:auto;
+}
+@media(max-width:680px){.code-compare{grid-template-columns:1fr}}
+.code-block{
+  background:#0d1017;border-radius:var(--radius);padding:1.5rem;
+  overflow-x:auto;font-family:'Cascadia Code','Fira Code',monospace;
+  font-size:.85rem;line-height:1.7;position:relative;
+  border:1px solid #1e2636;
+}
+.code-block.danger{border-color:rgba(255,92,114,.4)}
+.code-block.safe{border-color:rgba(55,211,153,.4)}
+.code-label{
+  position:absolute;top:.75rem;right:.75rem;
+  font-size:.7rem;font-weight:700;text-transform:uppercase;
+  padding:.2rem .6rem;border-radius:4px;
+  font-family:system-ui,sans-serif;
+}
+.code-block.danger .code-label{background:rgba(255,92,114,.15);color:var(--danger)}
+.code-block.safe .code-label{background:rgba(55,211,153,.15);color:var(--ok)}
+.code-block .keyword{color:var(--accent-light)}
+.code-block .comment{color:#5c6a7f}
+.code-block .danger-text{color:var(--danger)}
+.code-block .ok-text{color:var(--ok)}
+
+/* ARCHITECTURE */
+.arch-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:1.25rem;
+}
+.arch-item{
+  background:var(--panel);border:1px solid #1e2636;border-radius:var(--radius);
+  padding:1.5rem;display:flex;gap:1rem;align-items:flex-start;
+  transition:border-color .2s;
+}
+.arch-item:hover{border-color:var(--accent)}
+.arch-icon{
+  flex-shrink:0;width:40px;height:40px;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(124,92,255,.1);border-radius:8px;color:var(--accent-light);
+}
+.arch-item h4{font-size:.95rem;margin-bottom:.3rem}
+.arch-item p{font-size:.85rem;color:var(--text-muted)}
+
+/* AWS + KIRO */
+.aws-kiro{
+  background:var(--panel);border:1px solid #1e2636;border-radius:var(--radius);
+  padding:2.5rem;max-width:800px;margin:0 auto;
+  display:flex;flex-direction:column;gap:1.25rem;
+}
+.aws-kiro-item{display:flex;align-items:flex-start;gap:1rem}
+.aws-kiro-item .arch-icon{
+  background:rgba(55,211,153,.1);color:var(--ok);
+}
+
+/* RETO */
+.reto-banner{
+  text-align:center;padding:3rem 2rem;
+  background:linear-gradient(135deg,rgba(124,92,255,.08),rgba(167,139,250,.05));
+  border-radius:var(--radius);border:1px solid rgba(124,92,255,.2);
+}
+.reto-banner h3{font-size:1.3rem;margin-bottom:.5rem}
+.reto-banner p{color:var(--text-muted)}
+
+/* FOOTER */
+footer{
+  border-top:1px solid #1e2636;padding:2.5rem 0;text-align:center;
+  color:var(--text-muted);font-size:.9rem;
+}
+footer .links{display:flex;gap:1.5rem;justify-content:center;margin-bottom:1rem}
+
+/* ANIMATIONS */
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{opacity:0;transform:translateY(20px);transition:opacity .6s ease-out,transform .6s ease-out}
+.fade-in.visible{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-logo">FUGA</div>
+  <p class="hero-tagline">No advierte sobre fugas de datos: las demuestra, las repara y lo verifica.</p>
+  <div class="hero-buttons">
+    <a href="https://fuga-two.vercel.app" class="btn btn-primary" target="_blank" rel="noopener">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Demo en vivo
+    </a>
+    <a href="https://github.com/JuanMCanchala/fuga" class="btn btn-secondary" target="_blank" rel="noopener">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+      Repositorio
+    </a>
+  </div>
+</header>
+
+<!-- EL PROBLEMA -->
+<section id="problema">
+  <div class="container">
+    <h2 class="section-title">El problema</h2>
+    <p class="section-subtitle">Una sola linea de reglas mal configuradas expone toda tu base de datos al mundo.</p>
+    <div class="problem-card fade-in">
+      <p>
+        El antipatron <code>allow read, write: if true</code> en Cloud Firestore deja toda la base de datos
+        legible y escribible por <strong>cualquier persona en Internet</strong>.
+      </p>
+      <p>
+        Tarjetas de credito, cedulas, mensajes privados — todo accesible sin autenticacion.
+        Es una de las causas <strong>#1 de fuga de datos</strong> en aplicaciones Firebase.
+      </p>
+      <p>
+        Los linters existentes solo dicen <em>"esto parece inseguro"</em> — y el desarrollador lo ignora
+        porque no ve el impacto real.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- LA SOLUCION -->
+<section id="solucion">
+  <div class="container">
+    <h2 class="section-title">La solucion: loop cerrado de 4 pasos</h2>
+    <p class="section-subtitle">FUGA no opina: ejecuta el ataque, captura la evidencia, repara y re-verifica.</p>
+    <div class="steps-grid">
+      <div class="step-card fade-in">
+        <div class="step-number">1</div>
+        <h3>SCAN</h3>
+        <p>Analisis estatico con severidad y puntaje de riesgo. Detecta patrones peligrosos en tus reglas de Firestore.</p>
+      </div>
+      <div class="step-card fade-in">
+        <div class="step-number">2</div>
+        <h3>PROVE</h3>
+        <p>Lanza un atacante anonimo y captura el JSON exfiltrable. Muestra los datos reales que se filtrarian.</p>
+      </div>
+      <div class="step-card fade-in">
+        <div class="step-number">3</div>
+        <h3>FIX</h3>
+        <p>Genera reglas de minimo privilegio. El LLM propone y el evaluador valida que sean correctas.</p>
+      </div>
+      <div class="step-card fade-in">
+        <div class="step-number">4</div>
+        <h3>VERIFY</h3>
+        <p>Re-ataca con el mismo exploit: debe quedar en DENY. Loop cerrado, fuga eliminada.</p>
+      </div>
+    </div>
+    <div class="differentiator fade-in">
+      FUGA <strong>prueba</strong> con datos reales, no solo advierte. Si el atacante pasa, el fix no se acepta.
+    </div>
+
+    <!-- CODE COMPARE -->
+    <div class="code-compare fade-in">
+      <div class="code-block danger">
+        <span class="code-label">PELIGROSO</span>
+<pre><span class="comment">// Reglas inseguras (antipatron)</span>
+<span class="keyword">rules_version</span> = <span class="danger-text">'2'</span>;
+<span class="keyword">service</span> cloud.firestore {
+  <span class="keyword">match</span> /databases/{database}/documents {
+    <span class="keyword">match</span> /{document=**} {
+      <span class="danger-text">allow read, write: if true;</span>
+    }
+  }
+}</pre>
+      </div>
+      <div class="code-block safe">
+        <span class="code-label">SEGURO</span>
+<pre><span class="comment">// Reglas endurecidas (minimo privilegio)</span>
+<span class="keyword">rules_version</span> = <span class="ok-text">'2'</span>;
+<span class="keyword">service</span> cloud.firestore {
+  <span class="keyword">match</span> /databases/{database}/documents {
+    <span class="keyword">match</span> /users/{userId} {
+      <span class="ok-text">allow read: if request.auth != null
+        && request.auth.uid == userId;</span>
+      <span class="ok-text">allow write: if request.auth != null
+        && request.auth.uid == userId;</span>
+    }
+    <span class="keyword">match</span> /{document=**} {
+      <span class="ok-text">allow read, write: if false;</span>
+    }
+  }
+}</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ARQUITECTURA -->
+<section id="arquitectura">
+  <div class="container">
+    <h2 class="section-title">Arquitectura y tecnologia</h2>
+    <p class="section-subtitle">Componentes disenados para ser portables, privados y verificables.</p>
+    <div class="arch-grid">
+      <div class="arch-item fade-in">
+        <div class="arch-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        </div>
+        <div>
+          <h4>Evaluador propio en TypeScript</h4>
+          <p>Oraculo portatil que decide ALLOW/DENY sin Java ni emulador. Corre en CI y en el navegador.</p>
+        </div>
+      </div>
+      <div class="arch-item fade-in">
+        <div class="arch-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <div>
+          <h4>RAG sobre codigo cliente</h4>
+          <p>Infiere esquema y campos PII de tu codigo. Distingue una fuga en /pagos de una en /logs.</p>
+        </div>
+      </div>
+      <div class="arch-item fade-in">
+        <div class="arch-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <div>
+          <h4>LLM pluggable</h4>
+          <p>Amazon Bedrock (nube) / Ollama (local, privacidad) / plantilla determinista. El LLM propone, el evaluador valida.</p>
+        </div>
+      </div>
+      <div class="arch-item fade-in">
+        <div class="arch-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div>
+          <h4>Servidor MCP</h4>
+          <p>Tools fuga_scan / fuga_prove / fuga_fix para Kiro, Claude y Cursor. Integra seguridad a media conversacion.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AWS + KIRO -->
+<section id="aws-kiro">
+  <div class="container">
+    <h2 class="section-title">AWS + Kiro</h2>
+    <p class="section-subtitle">Potenciado por Amazon Bedrock y construido con el flujo spec-driven de Kiro.</p>
+    <div class="aws-kiro fade-in">
+      <div class="aws-kiro-item">
+        <div class="arch-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        </div>
+        <div>
+          <h4>Amazon Bedrock</h4>
+          <p>Motor LLM en la nube para reescritura inteligente de reglas de seguridad. Inference profiles con IAM de minimo privilegio.</p>
+        </div>
+      </div>
+      <div class="aws-kiro-item">
+        <div class="arch-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        </div>
+        <div>
+          <h4>Construido con Kiro</h4>
+          <p>Flujo spec-driven (requirements, design, tasks). Se integra a Kiro como servidor MCP para usar FUGA dentro del IDE.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RETO -->
+<section id="reto">
+  <div class="container">
+    <div class="reto-banner fade-in">
+      <h3>Hackaton Codigo Facilito x Kiro</h3>
+      <p>Reto 3: Agentes especializados</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="links">
+      <a href="https://fuga-two.vercel.app" target="_blank" rel="noopener">Demo en vivo</a>
+      <a href="https://github.com/JuanMCanchala/fuga" target="_blank" rel="noopener">Repositorio GitHub</a>
+    </div>
+    <p>FUGA — MIT &copy; Juan Manuel Canchala</p>
+  </div>
+</footer>
+
+<script>
+// Intersection Observer for fade-in animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
