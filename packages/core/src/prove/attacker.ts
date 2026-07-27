@@ -63,33 +63,54 @@ export function prove(rules: RulesFile, opts: ProveOptions): ExploitReport {
   for (const [collection, docs] of groups) {
     const sensitivity = sensitivityOf(collection, opts.schema);
 
-    // --- Intento de LECTURA anónima ---
+    // --- Intento de LECTURA anónima (get de un doc Y list de la colección) ---
     const sample = docs[0];
-    const readReq: AccessRequest = {
+    const base: Omit<AccessRequest, 'method'> = {
       path: sample.path,
-      method: 'get',
       auth: null,
       resource: sample.doc,
       db: opts.db,
     };
-    const readDecision = evaluate(rules, readReq);
-    const readProven = readDecision.verdict === 'ALLOW';
+    const getDecision = evaluate(rules, { ...base, method: 'get' });
+    const listDecision = evaluate(rules, { ...base, method: 'list' });
+    const readProven = getDecision.verdict === 'ALLOW' || listDecision.verdict === 'ALLOW';
+    const readVerdict: Verdict = readProven
+      ? 'ALLOW'
+      : getDecision.verdict === 'INDETERMINATE' || listDecision.verdict === 'INDETERMINATE'
+        ? 'INDETERMINATE'
+        : 'DENY';
     attempts.push({
       collection,
       path: sample.path,
       method: 'read',
-      verdict: readDecision.verdict,
+      verdict: readVerdict,
       proven: readProven,
       exfiltrated: readProven ? docs.map((d) => d.doc) : undefined,
       piiFields: sensitivity.piiFields,
     });
 
     // --- Intento de ESCRITURA anónima (inyección de documento) ---
+    // El atacante controla el payload: enviamos campos comunes con tipos
+    // plausibles para que reglas que solo validan tipos (`x is string`) sin
+    // exigir auth queden PROBADAS como explotables.
     const writeReq: AccessRequest = {
       path: `/${collection}/fuga_poc`,
       method: 'create',
       auth: null,
-      data: { fuga_poc: true, injectedBy: 'anonymous' },
+      data: {
+        fuga_poc: true,
+        injectedBy: 'anonymous',
+        nombre: 'x',
+        name: 'x',
+        title: 'x',
+        titulo: 'x',
+        content: 'x',
+        text: 'x',
+        descripcion: 'x',
+        count: 1,
+        monto: 1,
+        timestamp: 1,
+      },
       db: opts.db,
     };
     const writeDecision = evaluate(rules, writeReq);

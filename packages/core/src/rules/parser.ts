@@ -373,7 +373,19 @@ class Parser {
           literal: false,
         });
       } else {
-        const name = this.expect('ident').value;
+        // Segmento literal. Firestore permite guiones en nombres de colección
+        // (user-data, api-keys, order-items); el lexer los parte como operador
+        // '-', así que los reconstruimos aquí.
+        let name = this.expect('ident').value;
+        while (this.is('-')) {
+          this.next();
+          if (this.is('ident') || this.is('number')) {
+            name += '-' + this.next().value;
+          } else {
+            name += '-';
+            break;
+          }
+        }
         segments.push({ raw: name, recursive: false, literal: true });
       }
     }

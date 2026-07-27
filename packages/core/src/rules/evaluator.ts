@@ -340,8 +340,31 @@ function evalBinary(expr: { op: string; left: Expr; right: Expr }, ctx: EvalCont
       if (Array.isArray(r)) return r.some((x) => deepEqual(x, l));
       if (r && typeof r === 'object') return String(l) in (r as Record<string, unknown>);
       return UNKNOWN;
-    case 'is':
-      return UNKNOWN; // comprobación de tipo: no la resolvemos con certeza
+    case 'is': {
+      // Comprobación de tipo `x is <tipo>`. r es el nombre del tipo; l ya es un
+      // valor concreto (los casos UNKNOWN se filtraron arriba).
+      if (typeof r !== 'string') return UNKNOWN;
+      switch (r) {
+        case 'string':
+          return typeof l === 'string';
+        case 'int':
+        case 'float':
+        case 'number':
+          return typeof l === 'number';
+        case 'bool':
+          return typeof l === 'boolean';
+        case 'list':
+          return Array.isArray(l);
+        case 'map':
+          return l !== null && typeof l === 'object' && !Array.isArray(l);
+        case 'timestamp':
+          return typeof l === 'number' || l instanceof Date;
+        case 'null':
+          return l === null;
+        default:
+          return UNKNOWN;
+      }
+    }
     default:
       return UNKNOWN;
   }

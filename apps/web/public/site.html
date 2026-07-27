@@ -354,12 +354,18 @@ FUGA</h3>
 // === HERO CANVAS ANIMATION ===
 (function(){
 const canvas=document.getElementById('hero-canvas');
+if(!canvas)return;
 const ctx=canvas.getContext('2d');
-let w,h,nodes=[];
+const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let w,h,nodes=[],running=false,raf=0;
 function resize(){w=canvas.width=canvas.offsetWidth;h=canvas.height=canvas.offsetHeight;initNodes()}
-function initNodes(){nodes=[];const count=Math.floor((w*h)/12000);for(let i=0;i<count;i++){nodes.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,r:Math.random()*2+1})}}
-function draw(){ctx.clearRect(0,0,w,h);for(let i=0;i<nodes.length;i++){const n=nodes[i];n.x+=n.vx;n.y+=n.vy;if(n.x<0||n.x>w)n.vx*=-1;if(n.y<0||n.y>h)n.vy*=-1;ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.fillStyle='rgba(124,92,255,.6)';ctx.fill();for(let j=i+1;j<nodes.length;j++){const m=nodes[j];const dx=n.x-m.x,dy=n.y-m.y;const dist=Math.sqrt(dx*dx+dy*dy);if(dist<120){ctx.beginPath();ctx.moveTo(n.x,n.y);ctx.lineTo(m.x,m.y);ctx.strokeStyle='rgba(167,139,250,'+(1-dist/120)*.3+')';ctx.lineWidth=.5;ctx.stroke()}}}requestAnimationFrame(draw)}
-resize();window.addEventListener('resize',resize);draw()
+function initNodes(){nodes=[];const count=Math.min(80,Math.floor((w*h)/12000));for(let i=0;i<count;i++){nodes.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,r:Math.random()*2+1})}}
+function frame(){ctx.clearRect(0,0,w,h);for(let i=0;i<nodes.length;i++){const n=nodes[i];n.x+=n.vx;n.y+=n.vy;if(n.x<0||n.x>w)n.vx*=-1;if(n.y<0||n.y>h)n.vy*=-1;ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.fillStyle='rgba(124,92,255,.6)';ctx.fill();for(let j=i+1;j<nodes.length;j++){const m=nodes[j];const dx=n.x-m.x,dy=n.y-m.y;const dist=Math.sqrt(dx*dx+dy*dy);if(dist<120){ctx.beginPath();ctx.moveTo(n.x,n.y);ctx.lineTo(m.x,m.y);ctx.strokeStyle='rgba(167,139,250,'+(1-dist/120)*.3+')';ctx.lineWidth=.5;ctx.stroke()}}}}
+function loop(){frame();if(running)raf=requestAnimationFrame(loop)}
+function start(){if(running||reduce)return;running=true;raf=requestAnimationFrame(loop)}
+function stop(){running=false;cancelAnimationFrame(raf)}
+resize();window.addEventListener('resize',resize);
+if(reduce){frame()}else{const io=new IntersectionObserver(function(es){es.forEach(function(e){e.isIntersecting?start():stop()})},{threshold:0});io.observe(canvas)}
 })();
 
 // === INTERSECTION OBSERVER ===

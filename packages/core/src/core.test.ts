@@ -106,3 +106,36 @@ test('rag: léxico clasifica PII en ES/EN', () => {
   assert.notEqual(collectionSensitivity('pagos'), 'ninguno');
   assert.equal(collectionSensitivity('logs'), 'ninguno');
 });
+
+// --- Regresiones de la auditoría (Kiro) ---
+
+test('auditoría: parser no crashea con guiones en la colección', () => {
+  const src =
+    "rules_version='2';service cloud.firestore{match /databases/{db}/documents{match /admin-data/{id}{allow read: if true;}}}";
+  const d = evaluate(parseRules(src), { path: '/admin-data/x', method: 'get', auth: null });
+  assert.equal(d.verdict, 'ALLOW');
+});
+
+test('auditoría: operador is resuelve tipos concretos', () => {
+  const src =
+    "rules_version='2';service cloud.firestore{match /databases/{db}/documents{match /posts/{id}{allow create: if request.resource.data.nombre is string;}}}";
+  const ast = parseRules(src);
+  const ok = evaluate(ast, { path: '/posts/x', method: 'create', auth: null, data: { nombre: 'hola' } });
+  const bad = evaluate(ast, { path: '/posts/x', method: 'create', auth: null, data: { nombre: 123 } });
+  assert.equal(ok.verdict, 'ALLOW');
+  assert.equal(bad.verdict, 'DENY');
+});
+
+test('auditoría: rol vía get() no genera falso positivo FUGA005', () => {
+  const src =
+    "rules_version='2';service cloud.firestore{match /databases/{db}/documents{match /admin/{id}{allow write: if get(/databases/$(db)/documents/roles/$(request.auth.uid)).data.admin==true;}}}";
+  const report = analyze(parseRules(src));
+  assert.ok(!report.findings.some((f) => f.code === 'FUGA005'));
+});
+
+test('auditoría: prove detecta list público aunque get sea privado', () => {
+  const src =
+    "rules_version='2';service cloud.firestore{match /databases/{db}/documents{match /posts/{id}{allow get: if false; allow list: if true;}}}";
+  const report = prove(parseRules(src), { db: { '/posts/p1': { x: 1 } } });
+  assert.equal(report.clean, false);
+});

@@ -40,6 +40,10 @@ function referencesAuth(expr: Expr): boolean {
       return referencesAuth(expr.left) || referencesAuth(expr.right);
     case 'list':
       return expr.elements.some(referencesAuth);
+    case 'path':
+      // get(/databases/.../$(request.auth.uid)/...) referencia auth de forma
+      // indirecta; el path es un string opaco, así que lo inspeccionamos.
+      return expr.source.includes('request.auth');
     default:
       return false;
   }
