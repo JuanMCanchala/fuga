@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FUGA — Demuestra, repara y verifica fugas de datos en Firestore</title>
+<style>
+:root{--bg:#0b0e14;--panel:#121722;--border:#1e2636;--text:#e6ebf2;--muted:#8892a4;--accent:#7c5cff;--accent2:#a78bfa;--danger:#ff5c72;--ok:#37d399;--radius:12px;--shadow:0 4px 24px rgba(0,0,0,.4)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+a{color:var(--accent2);text-decoration:none;transition:color .2s}
+a:hover{color:var(--accent)}
+.container{max-width:1140px;margin:0 auto;padding:0 24px}
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(11,14,20,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:14px 0}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1140px;margin:0 auto;padding:0 24px}
+.nav-links{display:flex;align-items:center;gap:24px;list-style:none}
+.nav-links a{color:var(--muted);font-size:.9rem;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:var(--text)}
+.btn-sm{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:.85rem;font-weight:600;border:1px solid var(--accent);color:var(--accent);transition:all .2s}
+.btn-sm:hover{background:var(--accent);color:#fff}
+.nav-toggle{display:none;background:none;border:none;color:var(--text);cursor:pointer}
+/* HERO */
+.hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:120px 24px 80px}
+.hero canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.18}
+.hero-content{position:relative;z-index:2;text-align:center;max-width:820px}
+.badge{display:inline-block;padding:6px 18px;border-radius:99px;border:1px solid var(--border);background:var(--panel);font-size:.8rem;color:var(--muted);font-weight:500;margin-bottom:28px;letter-spacing:.3px}
+.hero h1{font-size:clamp(2.8rem,7vw,5.2rem);font-weight:900;line-height:1.05;letter-spacing:-1.5px;margin-bottom:20px}
+.hero h1 .grad{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:1.15rem;color:var(--muted);max-width:560px;margin:0 auto 36px}
+.btn-group{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:14px 30px;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;transition:all .2s;border:none}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 20px rgba(124,92,255,.35)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(124,92,255,.5)}
+.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.scroll-hint{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);animation:bounce 2s infinite}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+/* SECTIONS */
+section{padding:100px 0}
+.section-title{font-size:clamp(2rem,4.5vw,3.2rem);font-weight:900;letter-spacing:-1px;margin-bottom:16px}
+.section-sub{color:var(--muted);font-size:1.05rem;max-width:600px;margin-bottom:48px}
+/* CARDS */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:32px;transition:transform .2s,box-shadow .2s}
+.card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+.card-icon{width:48px;height:48px;margin-bottom:16px;color:var(--accent)}
+.card-num{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;font-size:.85rem;margin-bottom:12px}
+.card h3{font-size:1.15rem;font-weight:700;margin-bottom:8px}
+.card p{color:var(--muted);font-size:.92rem}
+.card.danger-border{border-color:rgba(255,92,114,.35)}
+/* PROBLEM */
+.problem-card{background:var(--panel);border:1px solid rgba(255,92,114,.3);border-radius:var(--radius);padding:40px;max-width:780px}
+.problem-card code{display:block;background:#0d1017;border:1px solid var(--border);border-radius:8px;padding:20px;font-size:.9rem;color:var(--danger);margin:20px 0;white-space:pre;overflow-x:auto;font-family:'Courier New',monospace}
+/* COMMAND CENTER */
+.console{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:32px;box-shadow:var(--shadow)}
+.console textarea{width:100%;min-height:100px;background:#0d1017;border:1px solid var(--border);border-radius:8px;padding:16px;color:var(--text);font-family:'Courier New',monospace;font-size:.85rem;resize:vertical;margin-bottom:16px}
+.console textarea:focus{outline:none;border-color:var(--accent)}
+.console label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.btn-attack{width:100%;padding:16px;font-size:1.05rem;font-weight:800;border:none;border-radius:10px;background:linear-gradient(135deg,var(--danger),#ff3d5a);color:#fff;cursor:pointer;transition:all .2s;letter-spacing:.5px}
+.btn-attack:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(255,92,114,.4)}
+.btn-attack:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.results{margin-top:32px;display:none}
+.results.show{display:block}
+.result-block{background:#0d1017;border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:20px;opacity:0;transform:translateY(16px);transition:all .4s ease}
+.result-block.visible{opacity:1;transform:translateY(0)}
+.result-block h4{font-size:.85rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.gauge{width:100%;height:10px;background:var(--border);border-radius:99px;overflow:hidden;margin:12px 0}
+.gauge-fill{height:100%;border-radius:99px;transition:width .8s ease}
+.finding{padding:8px 12px;border-radius:6px;margin-bottom:6px;font-size:.82rem;display:flex;align-items:center;gap:8px;border:1px solid var(--border)}
+.finding.critical{border-color:rgba(255,92,114,.4);color:var(--danger)}
+.finding.high{border-color:rgba(255,165,0,.3);color:#ffa500}
+.leak-card{background:rgba(255,92,114,.06);border:1px solid rgba(255,92,114,.3);border-radius:8px;padding:16px;margin-bottom:12px}
+.leak-card pre{background:rgba(255,92,114,.08);padding:12px;border-radius:6px;font-size:.8rem;color:var(--danger);overflow-x:auto;margin-top:8px}
+.fix-block{border-color:rgba(55,211,153,.3)}
+.fix-block pre{color:var(--ok);font-size:.8rem;overflow-x:auto;white-space:pre-wrap}
+.verify-banner{padding:16px 24px;border-radius:10px;font-weight:700;text-align:center;font-size:1rem}
+.verify-banner.clean{background:rgba(55,211,153,.1);border:1px solid rgba(55,211,153,.4);color:var(--ok)}
+.verify-banner.dirty{background:rgba(255,92,114,.1);border:1px solid rgba(255,92,114,.4);color:var(--danger)}
+/* COMPARISON */
+.comparison{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:900px}
+.comp-col{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:32px}
+.comp-col h3{font-size:1rem;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.comp-col ul{list-style:none;display:flex;flex-direction:column;gap:10px}
+.comp-col li{font-size:.9rem;color:var(--muted);display:flex;align-items:flex-start;gap:8px}
+.comp-col.fuga-col{border-color:rgba(124,92,255,.3)}
+.comp-col.fuga-col h3{color:var(--accent2)}
+/* AWS KIRO */
+.highlight-strip{background:linear-gradient(135deg,rgba(124,92,255,.08),rgba(167,139,250,.05));border:1px solid rgba(124,92,255,.2);border-radius:var(--radius);padding:48px;text-align:center}
+.highlight-strip h2{font-size:1.6rem;font-weight:800;margin-bottom:12px}
+.highlight-strip p{color:var(--muted);max-width:640px;margin:0 auto}
+/* FOOTER */
+footer{border-top:1px solid var(--border);padding:40px 0;text-align:center;color:var(--muted);font-size:.85rem}
+/* CTA */
+.cta-section{text-align:center;padding:80px 24px}
+.cta-section h2{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:900;margin-bottom:12px}
+.cta-section p{color:var(--muted);margin-bottom:32px}
+/* ANIMATIONS */
+.fade-in{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
+.fade-in.visible{opacity:1;transform:translateY(0)}
+/* RESPONSIVE */
+@media(max-width:768px){
+.nav-links{display:none;position:absolute;top:100%;left:0;right:0;background:rgba(11,14,20,.96);flex-direction:column;padding:20px;gap:16px;border-bottom:1px solid var(--border)}
+.nav-links.open{display:flex}
+.nav-toggle{display:block}
+.comparison{grid-template-columns:1fr}
+.hero h1{font-size:2.2rem}
+section{padding:60px 0}
+.console{padding:20px}
+}
+</style>
+</head>
+<body>
+<!-- NAV -->
+<nav class="nav">
+<div class="nav-inner">
+<a href="#" aria-label="FUGA home">
+<svg viewBox="0 0 180 48" width="132" height="35"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs><path d="M24 4 L40 10 L40 24 C40 34 33 40 24 44 C15 40 8 34 8 24 L8 10 Z" fill="url(#lg)"/><path d="M24 14 C24 14 19 20 19 24 C19 27.3 21.2 29.5 24 29.5 C26.8 29.5 29 27.3 29 24 C29 20 24 14 24 14 Z" fill="#0b0e14" opacity="0.85"/><rect x="18" y="22" width="12" height="3" rx="1.5" fill="#e6ebf2"/><text x="54" y="33" font-family="system-ui,sans-serif" font-weight="800" font-size="24" fill="#e6ebf2" letter-spacing="1">FUGA</text></svg>
+</a>
+<button class="nav-toggle" aria-label="Menu" onclick="document.querySelector('.nav-links').classList.toggle('open')">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+</button>
+<ul class="nav-links">
+<li><a href="#problema">Problema</a></li>
+<li><a href="#como-funciona">Cómo funciona</a></li>
+<li><a href="#command-center">Command Center</a></li>
+<li><a href="#arquitectura">Arquitectura</a></li>
+<li><a href="https://github.com/JuanMCanchala/fuga" target="_blank" class="btn-sm">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+GitHub</a></li>
+</ul>
+</div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+<canvas id="hero-canvas"></canvas>
+<div class="hero-content fade-in">
+<span class="badge">Agente especializado &middot; Reto 3</span>
+<h1>TUS DATOS EST&Aacute;N EXPUESTOS.<br><span class="grad">FUGA LO DEMUESTRA.</span></h1>
+<p>El agente que no advierte sobre fugas de datos: las demuestra con un atacante an&oacute;nimo, genera el fix de m&iacute;nimo privilegio y re-verifica que la fuga desapareci&oacute;.</p>
+<div class="btn-group">
+<a href="#command-center" class="btn btn-primary">Probar en vivo</a>
+<a href="https://github.com/JuanMCanchala/fuga" target="_blank" class="btn btn-secondary">Ver el c&oacute;digo</a>
+</div>
+</div>
+<div class="scroll-hint">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+</div>
+</section>
+
+<!-- PROBLEMA -->
+<section id="problema">
+<div class="container fade-in">
+<h2 class="section-title">El Problema</h2>
+<div class="problem-card">
+<p style="font-size:1.05rem;margin-bottom:12px">Una sola l&iacute;nea deja toda tu base de datos legible y escribible por <strong>cualquier persona en Internet</strong>:</p>
+<code>match /{document=**} {
+  allow read, write: if true;
+}</code>
+<p style="color:var(--muted)">Tarjetas de cr&eacute;dito, c&eacute;dulas, mensajes privados, historiales m&eacute;dicos&hellip; todo expuesto. <strong style="color:var(--danger)">Una de las causas #1 de fuga de datos en apps con Firebase.</strong></p>
+<p style="color:var(--muted);margin-top:12px">Los linters existentes solo dicen &ldquo;esto parece inseguro&rdquo; &mdash; y el desarrollador lo ignora porque no ve el impacto.</p>
+</div>
+</div>
+</section>
+
+<!-- CÓMO FUNCIONA -->
+<section id="como-funciona">
+<div class="container">
+<h2 class="section-title fade-in">C&oacute;mo funciona</h2>
+<p class="section-sub fade-in">Cuatro pasos. Loop cerrado. Sin fisuras.</p>
+<div class="cards">
+<div class="card fade-in">
+<span class="card-num">1</span>
+<h3>SCAN</h3>
+<p>An&aacute;lisis est&aacute;tico de tus reglas. Detecta patrones permisivos, asigna severidad y calcula un puntaje de riesgo 0-100.</p>
+</div>
+<div class="card fade-in">
+<span class="card-num">2</span>
+<h3>PROVE</h3>
+<p>Un atacante an&oacute;nimo ejecuta el acceso real y captura el JSON exfiltrable. No opina: <strong>demuestra</strong>.</p>
+</div>
+<div class="card fade-in">
+<span class="card-num">3</span>
+<h3>FIX</h3>
+<p>Genera reglas de m&iacute;nimo privilegio. El LLM propone, el evaluador propio valida. Nada de reglas alucinadas.</p>
+</div>
+<div class="card fade-in">
+<span class="card-num">4</span>
+<h3>VERIFY</h3>
+<p>Re-ataca con las reglas nuevas. Solo se acepta el fix si el atacante queda en <strong style="color:var(--ok)">DENY</strong>.</p>
+</div>
+</div>
+<p style="text-align:center;margin-top:48px;font-size:1.4rem;font-weight:800;letter-spacing:-0.5px" class="fade-in">No advierte. <span style="color:var(--accent)">Prueba.</span></p>
+</div>
+</section>
+
+<!-- COMMAND CENTER -->
+<section id="command-center">
+<div class="container">
+<h2 class="section-title fade-in">Command Center</h2>
+<p class="section-sub fade-in">Pega tus reglas de Firestore y observa la fuga en tiempo real.</p>
+<div class="console fade-in">
+<label for="rules-input">Reglas de Firestore</label>
+<textarea id="rules-input">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}</textarea>
+<label for="code-input">C&oacute;digo cliente (opcional)</label>
+<textarea id="code-input" style="min-height:60px">collection(db,'pagos'); collection(db,'usuarios'); addDoc(r,{numeroTarjeta,cvv,email,telefono,ownerId})</textarea>
+<button class="btn-attack" id="btn-run" onclick="runAttack()">EJECUTAR ATAQUE</button>
+
+<div class="results" id="results">
+<!-- SCAN -->
+<div class="result-block" id="res-scan">
+<h4>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+SCAN
+</h4>
+<div id="scan-score" style="font-size:2rem;font-weight:900"></div>
+<div class="gauge"><div class="gauge-fill" id="gauge-fill"></div></div>
+<div id="scan-findings"></div>
+</div>
+<!-- PROVE -->
+<div class="result-block" id="res-prove">
+<h4>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round"><path d="M12 9v2m0 4h.01M5.07 19h13.86a2 2 0 0 0 1.73-3L13.73 4a2 2 0 0 0-3.46 0L3.34 16a2 2 0 0 0 1.73 3z"/></svg>
+PROVE
+</h4>
+<div id="prove-summary" style="margin-bottom:12px;font-weight:700"></div>
+<div id="prove-leaks"></div>
+</div>
+<!-- FIX -->
+<div class="result-block fix-block" id="res-fix">
+<h4>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+FIX
+</h4>
+<div id="fix-source" style="font-size:.75rem;color:var(--muted);margin-bottom:8px"></div>
+<pre id="fix-rules"></pre>
+</div>
+<!-- VERIFY -->
+<div class="result-block" id="res-verify">
+<h4>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+VERIFY
+</h4>
+<div id="verify-banner"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- ARQUITECTURA -->
+<section id="arquitectura">
+<div class="container">
+<h2 class="section-title fade-in">Arquitectura</h2>
+<p class="section-sub fade-in">Cuatro piezas que se combinan de forma no trivial.</p>
+<div class="cards">
+<div class="card fade-in">
+<svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+<h3>Evaluador de reglas propio</h3>
+<p>Or&aacute;culo port&aacute;til en TypeScript. Decide ALLOW/DENY sin Java ni emulador. Corre en CI y en el navegador.</p>
+</div>
+<div class="card fade-in">
+<svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+<h3>RAG sobre c&oacute;digo cliente</h3>
+<p>Infiere colecciones y campos. Distingue una fuga en <code>/pagos</code> de una en <code>/logs</code>. Clasifica PII en ES/EN.</p>
+</div>
+<div class="card fade-in">
+<svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+<h3>LLM pluggable</h3>
+<p>Amazon Bedrock (nube) / Ollama (local, privacidad) / plantilla determinista. El LLM propone, el evaluador dispone.</p>
+</div>
+<div class="card fade-in">
+<svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+<h3>Servidor MCP</h3>
+<p>Tools <code>fuga_scan</code>, <code>fuga_prove</code>, <code>fuga_fix</code> para Kiro, Claude y Cursor. Integra seguridad en tu flujo de desarrollo.</p>
+</div>
+</div>
+</div>
+</section>
+
+<!-- POR QUÉ FUGA -->
+<section id="por-que">
+<div class="container">
+<h2 class="section-title fade-in">Por qu&eacute; FUGA</h2>
+<div class="comparison fade-in">
+<div class="comp-col">
+<h3>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+Linters tradicionales</h3>
+<ul>
+<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Solo advierten &ldquo;esto parece inseguro&rdquo;</li>
+<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> No muestran el impacto real</li>
+<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> No generan fix validado</li>
+<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> El desarrollador ignora la alerta</li>
+</ul>
+</div>
+<div class="comp-col fuga-col">
+<h3>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+FUGA</h3>
+<ul>
+<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Ejecuta el ataque real</li>
+<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Muestra los datos exfiltrados</li>
+<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Genera reglas de m&iacute;nimo privilegio</li>
+<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Re-verifica hasta DENY</li>
+<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Loop cerrado y automatizado</li>
+</ul>
+</div>
+</div>
+</div>
+</section>
+
+<!-- AWS + KIRO -->
+<section id="aws-kiro">
+<div class="container">
+<div class="highlight-strip fade-in">
+<h2>Potenciado por Amazon Bedrock &amp; construido con Kiro</h2>
+<p>Amazon Bedrock como motor LLM en la nube para la reescritura inteligente de reglas. Proyecto desarrollado con el flujo spec-driven de Kiro (requirements &rarr; design &rarr; tasks) y se integra como servidor MCP para agentes de c&oacute;digo.</p>
+</div>
+</div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="cta-section">
+<div class="container fade-in">
+<h2>Prueba FUGA ahora</h2>
+<p>Ve tus datos filtrarse, aplica el fix y verifica que la fuga desapareci&oacute;.</p>
+<div class="btn-group">
+<a href="https://fuga-two.vercel.app" target="_blank" class="btn btn-primary">Demo en vivo</a>
+<a href="https://github.com/JuanMCanchala/fuga" target="_blank" class="btn btn-secondary">Repositorio</a>
+</div>
+</div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+<div class="container">
+<p>FUGA &mdash; MIT &copy; Juan Manuel Canchala &middot; Hackat&oacute;n C&oacute;digo Facilito &times; Kiro</p>
+</div>
+</footer>
+
+<script>
+// === HERO CANVAS ANIMATION ===
+(function(){
+const canvas=document.getElementById('hero-canvas');
+const ctx=canvas.getContext('2d');
+let w,h,nodes=[];
+function resize(){w=canvas.width=canvas.offsetWidth;h=canvas.height=canvas.offsetHeight;initNodes()}
+function initNodes(){nodes=[];const count=Math.floor((w*h)/12000);for(let i=0;i<count;i++){nodes.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,r:Math.random()*2+1})}}
+function draw(){ctx.clearRect(0,0,w,h);for(let i=0;i<nodes.length;i++){const n=nodes[i];n.x+=n.vx;n.y+=n.vy;if(n.x<0||n.x>w)n.vx*=-1;if(n.y<0||n.y>h)n.vy*=-1;ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,Math.PI*2);ctx.fillStyle='rgba(124,92,255,.6)';ctx.fill();for(let j=i+1;j<nodes.length;j++){const m=nodes[j];const dx=n.x-m.x,dy=n.y-m.y;const dist=Math.sqrt(dx*dx+dy*dy);if(dist<120){ctx.beginPath();ctx.moveTo(n.x,n.y);ctx.lineTo(m.x,m.y);ctx.strokeStyle='rgba(167,139,250,'+(1-dist/120)*.3+')';ctx.lineWidth=.5;ctx.stroke()}}}requestAnimationFrame(draw)}
+resize();window.addEventListener('resize',resize);draw()
+})();
+
+// === INTERSECTION OBSERVER ===
+(function(){
+const obs=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}})},{threshold:0.12});
+document.querySelectorAll('.fade-in').forEach(el=>obs.observe(el))
+})();
+
+// === COMMAND CENTER ===
+async function runAttack(){
+const btn=document.getElementById('btn-run');
+const results=document.getElementById('results');
+const rules=document.getElementById('rules-input').value;
+const code=document.getElementById('code-input').value;
+btn.disabled=true;btn.textContent='Atacando\u2026';
+results.classList.add('show');
+['res-scan','res-prove','res-fix','res-verify'].forEach(id=>{document.getElementById(id).classList.remove('visible')});
+try{
+const resp=await fetch('/api/analyze',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({rules,code})});
+if(!resp.ok)throw new Error('Error '+resp.status+': '+(await resp.text()));
+const data=await resp.json();
+showScan(data.scan);
+setTimeout(()=>showProve(data.exploit),400);
+setTimeout(()=>showFix(data.fix),800);
+setTimeout(()=>showVerify(data.verify),1200);
+}catch(e){
+const el=document.getElementById('res-scan');
+el.innerHTML='<h4 style="color:var(--danger)">Error</h4><p style="color:var(--muted)">'+escapeHtml(e.message)+'</p>';
+el.classList.add('visible');
+}finally{btn.disabled=false;btn.textContent='EJECUTAR ATAQUE'}
+}
+
+function showScan(scan){
+const el=document.getElementById('res-scan');
+const score=scan.riskScore||0;
+let color=score>75?'var(--danger)':score>40?'#ffa500':'var(--ok)';
+document.getElementById('scan-score').innerHTML='<span style="color:'+color+'">'+score+'</span><span style="font-size:.9rem;color:var(--muted)">/100</span>';
+const fill=document.getElementById('gauge-fill');
+fill.style.width=score+'%';fill.style.background=color;
+const findings=scan.findings||[];
+let fhtml='';
+findings.forEach(f=>{
+const cls=f.severity==='CRITICAL'?'critical':f.severity==='HIGH'?'high':'';
+fhtml+='<div class="finding '+cls+'"><strong>'+escapeHtml(f.severity)+'</strong> <span style="opacity:.7">'+escapeHtml(f.code)+'</span> '+escapeHtml(f.title)+'</div>';
+});
+document.getElementById('scan-findings').innerHTML=fhtml;
+el.classList.add('visible');
+}
+
+function showProve(exploit){
+const el=document.getElementById('res-prove');
+const leaks=exploit.leaks||[];
+document.getElementById('prove-summary').innerHTML='<span style="color:var(--danger)">'+leaks.length+' fugas</span>, '+exploit.totalDocsExposed+' documentos exfiltrables';
+let html='';
+leaks.forEach(l=>{
+html+='<div class="leak-card"><strong>'+escapeHtml(l.method)+'</strong> <code>'+escapeHtml(l.path)+'</code>';
+if(l.exfiltrated)html+='<pre>'+escapeHtml(JSON.stringify(l.exfiltrated,null,2))+'</pre>';
+html+='</div>';
+});
+document.getElementById('prove-leaks').innerHTML=html;
+el.classList.add('visible');
+}
+
+function showFix(fix){
+const el=document.getElementById('res-fix');
+document.getElementById('fix-source').textContent='Fuente: '+(fix.source||'determinista');
+document.getElementById('fix-rules').textContent=fix.rules||'';
+el.classList.add('visible');
+}
+
+function showVerify(verify){
+const el=document.getElementById('res-verify');
+const banner=document.getElementById('verify-banner');
+if(verify.clean){
+banner.className='verify-banner clean';
+banner.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle;margin-right:8px"><polyline points="20 6 9 17 4 12"/></svg>Fuga eliminada y verificada';
+}else{
+banner.className='verify-banner dirty';
+banner.textContent=verify.remaining+' fugas restantes \u2014 el fix requiere ajuste';
+}
+el.classList.add('visible');
+}
+
+function escapeHtml(s){if(!s)return '';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+// Close nav on link click (mobile)
+document.querySelectorAll('.nav-links a').forEach(a=>{a.addEventListener('click',()=>{document.querySelector('.nav-links').classList.remove('open')})});
+</script>
+</body>
+</html>
