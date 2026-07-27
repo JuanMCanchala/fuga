@@ -99,6 +99,8 @@ footer{border-top:1px solid var(--border);padding:40px 0;text-align:center;color
 /* ANIMATIONS */
 .fade-in{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
 .fade-in.visible{opacity:1;transform:translateY(0)}
+.hero-anim{opacity:0;transform:translateY(24px);animation:heroIn .8s ease .1s forwards}
+@keyframes heroIn{to{opacity:1;transform:none}}
 /* RESPONSIVE */
 @media(max-width:768px){
 .nav-links{display:none;position:absolute;top:100%;left:0;right:0;background:rgba(11,14,20,.96);flex-direction:column;padding:20px;gap:16px;border-bottom:1px solid var(--border)}
@@ -136,7 +138,7 @@ GitHub</a></li>
 <!-- HERO -->
 <section class="hero">
 <canvas id="hero-canvas"></canvas>
-<div class="hero-content fade-in">
+<div class="hero-content hero-anim">
 <span class="badge">Agente especializado &middot; Reto 3</span>
 <h1>TUS DATOS EST&Aacute;N EXPUESTOS.<br><span class="grad">FUGA LO DEMUESTRA.</span></h1>
 <p>El agente que no advierte sobre fugas de datos: las demuestra con un atacante an&oacute;nimo, genera el fix de m&iacute;nimo privilegio y re-verifica que la fuga desapareci&oacute;.</p>
