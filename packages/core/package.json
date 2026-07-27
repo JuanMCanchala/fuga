@@ -11,5 +11,8 @@
     "test": "node --test dist/core.test.js",
     "pretest": "npm run build"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "optionalDependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.600.0"
+  }
 }

@@ -38,3 +38,5 @@ Thumbs.db
 # FUGA cache / reports
 .fuga/
 fuga-report.*
+
+.vercel

@@ -26,8 +26,13 @@ export interface LlmProvider {
 
 class BedrockProvider implements LlmProvider {
   name = 'bedrock';
-  private modelId = process.env.FUGA_BEDROCK_MODEL ?? 'anthropic.claude-3-5-sonnet-20240620-v1:0';
-  private region = process.env.AWS_REGION ?? 'us-east-1';
+  // Bedrock exige normalmente un *inference profile* (prefijo us./eu./apac.) en
+  // vez del model id on-demand. Por defecto usamos el perfil de Claude Haiku en
+  // US; sobreescribe con FUGA_BEDROCK_MODEL.
+  private modelId = process.env.FUGA_BEDROCK_MODEL ?? 'us.anthropic.claude-3-haiku-20240307-v1:0';
+  // Si no hay AWS_REGION, dejamos que el SDK la resuelva de la config compartida
+  // (aws configure / perfil), en vez de forzar una región equivocada.
+  private region = process.env.AWS_REGION;
 
   // Especificador computado: el SDK es una dependencia OPCIONAL, no debe exigirse
   // en tiempo de compilación ni si el usuario no usa Bedrock.
@@ -35,7 +40,11 @@ class BedrockProvider implements LlmProvider {
 
   async available(): Promise<boolean> {
     if (process.env.FUGA_LLM && process.env.FUGA_LLM !== 'bedrock') return false;
-    if (!process.env.AWS_ACCESS_KEY_ID && !process.env.AWS_PROFILE) return false;
+    // Explícito (FUGA_LLM=bedrock) => confiamos en la cadena de credenciales del
+    // SDK (env, config compartida, SSO, IMDS). En auto-detección exigimos señal.
+    const explicit = process.env.FUGA_LLM === 'bedrock';
+    const hasCreds = Boolean(process.env.AWS_ACCESS_KEY_ID || process.env.AWS_PROFILE);
+    if (!explicit && !hasCreds) return false;
     try {
       await import(this.sdkModule);
       return true;
@@ -46,7 +55,7 @@ class BedrockProvider implements LlmProvider {
 
   async complete(messages: LlmMessage[], opts?: { maxTokens?: number; temperature?: number }): Promise<string> {
     const { BedrockRuntimeClient, InvokeModelCommand } = await import(this.sdkModule);
-    const client = new BedrockRuntimeClient({ region: this.region });
+    const client = new BedrockRuntimeClient(this.region ? { region: this.region } : {});
     const system = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n');
     const user = messages.filter((m) => m.role === 'user').map((m) => m.content).join('\n');
     const body = {
