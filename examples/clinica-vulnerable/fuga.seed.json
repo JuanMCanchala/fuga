@@ -1,0 +1,36 @@
+{
+  "/pacientes/p_ana": {
+    "nombre": "Ana María Ríos Gutiérrez",
+    "cedula": "1.032.456.789",
+    "email": "ana.rios@correo.com",
+    "telefono": "+57 310 456 7890",
+    "diagnostico": "Diabetes tipo 2 — control con metformina 850mg",
+    "tipoSangre": "O+",
+    "ownerId": "ana",
+    "creadoEn": "2025-03-14T08:30:00Z"
+  },
+  "/pagos/pg_1": {
+    "ownerId": "ana",
+    "monto": 480000,
+    "numeroTarjeta": "4111 1111 1111 1111",
+    "cvv": "321",
+    "fecha": "2025-06-20T14:22:00Z"
+  },
+  "/citas/c_1": {
+    "pacienteId": "p_ana",
+    "fecha": "2025-07-05T09:00:00Z",
+    "motivo": "Control glucemia trimestral",
+    "creadoPor": "dr_lopez",
+    "estado": "confirmada"
+  },
+  "/resenas/r_1": {
+    "texto": "Excelente atención, el doctor explicó todo con paciencia.",
+    "autor": "Carlos M.",
+    "fecha": "2025-05-10T16:45:00Z"
+  },
+  "/usuarios/ana": {
+    "nombre": "Ana María Ríos Gutiérrez",
+    "email": "ana.rios@correo.com",
+    "actualizadoEn": "2025-03-14T08:35:00Z"
+  }
+}
