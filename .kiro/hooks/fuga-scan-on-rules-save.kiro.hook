@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "fuga-scan-on-rules-save",
+      "description": "Al guardar un archivo de reglas de Firestore, FUGA lo escanea y prueba fugas automáticamente, y propone el fix si detecta acceso anónimo.",
+      "trigger": "PostFileSave",
+      "matcher": "\\.rules$",
+      "action": {
+        "type": "agent",
+        "prompt": "El archivo de reglas de Firestore acaba de cambiar. Ejecuta fuga_scan y fuga_prove sobre él y resume: puntaje de riesgo, hallazgos con severidad, y las fugas probadas con los documentos exfiltrables. Si hay alguna fuga, propón el fix de mínimo privilegio con fuga_fix y confírmalo con una re-verificación."
+      },
+      "enabled": true
+    }
+  ]
+}

@@ -1,3 +1,7 @@
+---
+inclusion: always
+---
+
 # Stack técnico — FUGA
 
 ## Lenguaje y runtime
