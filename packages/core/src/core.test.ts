@@ -9,6 +9,9 @@ import { harden } from './fix/harden';
 import { indexClientCode } from './rag/indexer';
 import { synthSeed } from './prove/seed';
 import { classifyFieldByLexicon, collectionSensitivity } from './rag/schema';
+import { parseRtdbRules, analyzeRtdb, proveRtdb } from './rtdb/engine';
+import { parseSupabase, proveSupabase } from './supabase/engine';
+import { detectBackend } from './backends';
 
 const IF_TRUE = `rules_version = '2';
 service cloud.firestore {
@@ -138,4 +141,38 @@ test('auditoría: prove detecta list público aunque get sea privado', () => {
     "rules_version='2';service cloud.firestore{match /databases/{db}/documents{match /posts/{id}{allow get: if false; allow list: if true;}}}";
   const report = prove(parseRules(src), { db: { '/posts/p1': { x: 1 } } });
   assert.equal(report.clean, false);
+});
+
+// --- Multi-backend: RTDB + Supabase ---
+
+test('rtdb: read/write público probado; reglas seguras limpias', () => {
+  const vuln = parseRtdbRules(JSON.stringify({ rules: { '.read': true, '.write': true } }));
+  assert.equal(analyzeRtdb(vuln).riskScore, 100);
+  const ex = proveRtdb(vuln, { '/usuarios/u1': { email: 'a@x.com' } });
+  assert.equal(ex.clean, false);
+
+  const safe = parseRtdbRules(
+    JSON.stringify({ rules: { '.read': false, '.write': false, usuarios: { $uid: { '.read': 'auth != null && auth.uid === $uid' } } } }),
+  );
+  assert.equal(analyzeRtdb(safe).riskScore, 0);
+  assert.equal(proveRtdb(safe, { '/usuarios/u1': { email: 'a@x.com' } }).clean, true);
+});
+
+test('supabase: RLS off es fuga; RLS + policy de dueño es seguro', () => {
+  const sql =
+    'create table pagos (id uuid, user_id uuid, numeroTarjeta text);\n' +
+    'create table perfiles (id uuid);\nalter table perfiles enable row level security;\n' +
+    "create policy own on perfiles for select to authenticated using (auth.uid() = id);";
+  const s = parseSupabase(sql);
+  const ex = proveSupabase(s, { '/pagos/1': { numeroTarjeta: '4111' }, '/perfiles/1': { id: 'x' } });
+  const pagos = ex.leaks.find((l) => l.collection === 'pagos' && l.method === 'read');
+  const perfiles = ex.attempts.find((a) => a.collection === 'perfiles' && a.method === 'read');
+  assert.ok(pagos && pagos.proven); // RLS off => fuga
+  assert.equal(perfiles?.proven, false); // RLS + auth => sin fuga
+});
+
+test('detectBackend: distingue firestore, rtdb y supabase', () => {
+  assert.equal(detectBackend('rules_version = "2"; service cloud.firestore {}'), 'firestore');
+  assert.equal(detectBackend('{"rules":{".read":true}}'), 'rtdb');
+  assert.equal(detectBackend('create table x (id uuid); alter table x enable row level security;'), 'supabase');
 });

@@ -52,3 +52,29 @@ export type { HardenInput, HardenResult } from './fix/harden';
 
 export { selectProvider } from './llm/provider';
 export type { LlmProvider, LlmMessage } from './llm/provider';
+
+// Motor RTDB (Firebase Realtime Database)
+export {
+  parseRtdbRules,
+  analyzeRtdb,
+  proveRtdb,
+  evaluateRtdb,
+  hardenRtdb,
+} from './rtdb/engine';
+export type { RtdbRules } from './rtdb/engine';
+
+// Motor Supabase (Postgres RLS)
+export {
+  parseSupabase,
+  analyzeSupabase,
+  proveSupabase,
+  evaluateSupabase,
+  hardenSupabase,
+} from './supabase/engine';
+export type { SupabaseSchema, TableModel, Policy } from './supabase/engine';
+export { rtdbCollections } from './rtdb/engine';
+export { synthSeedFor } from './prove/seed';
+
+// Dispatcher multi-backend
+export { runFuga, detectBackend } from './backends';
+export type { Backend, RunResult, RunOptions } from './backends';

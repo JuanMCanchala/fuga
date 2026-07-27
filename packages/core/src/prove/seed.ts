@@ -5,7 +5,7 @@
  * teléfono) hace la fuga tangible. Son datos ficticios, nunca reales.
  */
 
-import { PiiCategory, SchemaModel } from '../rag/schema';
+import { PiiCategory, SchemaModel, collectionSensitivity } from '../rag/schema';
 import { SeededDb } from './attacker';
 
 function norm(s: string): string {
@@ -88,6 +88,41 @@ const BY_CATEGORY: Record<PiiCategory, unknown> = {
   menor: '2015-04-12',
   ninguno: 'valor',
 };
+
+/** Campos representativos por categoría, para sembrar targets sin esquema. */
+const FIELDS_BY_CATEGORY: Record<PiiCategory, string[]> = {
+  financiero: ['numeroTarjeta', 'cvv', 'monto'],
+  identidad: ['nombre', 'cedula', 'email', 'telefono'],
+  contacto: ['nombre', 'email', 'telefono'],
+  salud: ['nombre', 'diagnostico', 'tipoSangre'],
+  credencial: ['token', 'password'],
+  ubicacion: ['latitud', 'longitud'],
+  menor: ['nombre', 'fechaNacimiento'],
+  ninguno: ['dato'],
+};
+
+/**
+ * Sintetiza un seed a partir de NOMBRES de target (colecciones RTDB / tablas
+ * Supabase / colecciones Firestore) cuando no hay código cliente. Deriva campos
+ * verosímiles según la sensibilidad del nombre del target.
+ */
+export function synthSeedFor(targets: string[], schema?: SchemaModel): SeededDb {
+  const list = targets.length ? targets : ['pagos', 'usuarios'];
+  const db: SeededDb = {};
+  for (const name of list) {
+    const info = schema?.collections[name];
+    const doc: Record<string, unknown> = { ownerId: 'alice', user_id: 'alice' };
+    if (info && info.fields.some((f) => f.pii)) {
+      for (const f of info.fields) if (f.pii) doc[f.name] = sampleValueFor(f.name, f.category);
+    } else {
+      const cat = collectionSensitivity(name);
+      const fields = FIELDS_BY_CATEGORY[cat] ?? FIELDS_BY_CATEGORY.ninguno;
+      for (const field of fields) doc[field] = sampleValueFor(field, cat === 'ninguno' ? 'ninguno' : cat);
+    }
+    db[`/${name}/ejemplo1`] = doc;
+  }
+  return db;
+}
 
 export function sampleValueFor(field: string, category: PiiCategory): unknown {
   const n = norm(field);
