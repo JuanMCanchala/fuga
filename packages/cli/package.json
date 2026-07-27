@@ -1,0 +1,17 @@
+{
+  "name": "@fuga/cli",
+  "version": "0.1.0",
+  "description": "FUGA CLI: escanea, prueba y repara fugas de datos en reglas de seguridad de Firestore.",
+  "license": "MIT",
+  "bin": {
+    "fuga": "dist/index.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@fuga/core": "0.1.0"
+  }
+}

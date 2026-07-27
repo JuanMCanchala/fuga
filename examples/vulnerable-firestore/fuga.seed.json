@@ -1,0 +1,21 @@
+{
+  "/usuarios/u_alice": {
+    "ownerId": "alice",
+    "nombre": "Alice Pérez",
+    "email": "alice@correo.com",
+    "telefono": "+57 300 123 4567",
+    "cedula": "1.032.456.789"
+  },
+  "/pagos/p_001": {
+    "ownerId": "alice",
+    "monto": 1250000,
+    "numeroTarjeta": "4111 1111 1111 1111",
+    "cvv": "321"
+  },
+  "/mensajes/m_88": {
+    "ownerId": "alice",
+    "de": "alice@correo.com",
+    "para": "bob@correo.com",
+    "texto": "Te presto los 2 millones, mi cuenta es 0021-3456-7890"
+  }
+}

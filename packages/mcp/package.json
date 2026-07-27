@@ -1,0 +1,21 @@
+{
+  "name": "@fuga/mcp",
+  "version": "0.1.0",
+  "description": "Servidor MCP de FUGA: expone scan/prove/fix a agentes (Kiro, Claude, Cursor).",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/server.js",
+  "bin": {
+    "fuga-mcp": "dist/bin.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/bin.js"
+  },
+  "dependencies": {
+    "@fuga/core": "0.1.0",
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.23.8"
+  }
+}

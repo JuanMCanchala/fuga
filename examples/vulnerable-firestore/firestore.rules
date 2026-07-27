@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ANTIPATRÓN: acceso público total. Es la causa #1 de fugas de datos en
+    // apps con Firebase. Cualquiera en Internet puede leer y escribir TODO.
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

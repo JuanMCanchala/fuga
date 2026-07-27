@@ -1,0 +1,23 @@
+# Plan de implementación — Agente FUGA
+
+- [x] 1. Parser de reglas Firestore (lexer + descenso recursivo + AST)
+  - Preserva offsets de origen para citar condiciones. _R1_
+- [x] 2. Evaluador portátil de reglas (oráculo ALLOW/DENY/INDETERMINATE)
+  - Matching de path con captura y `{x=**}`; propagación conservadora de UNKNOWN. _R1, R2_
+- [x] 3. Análisis estático con sonda de atacante anónimo
+  - Hallazgos FUGA002/003/004/005; `proven` confirmado por el evaluador. _R1_
+- [x] 4. RAG: indexador de código + esquema + léxico PII (ES/EN)
+  - Clasificación local opcional con Ollama. _R3_
+- [x] 5. Atacante `prove` + seed sintético verosímil
+  - Captura JSON exfiltrable; agrupa por colección. _R2_
+- [x] 6. `fix`: plantilla de mínimo privilegio + borrador LLM validado
+  - Genera tests portátiles; loop de auto-validación. _R4_
+- [x] 7. `verify`: re-ejecuta el atacante, exit code por resultado. _R4_
+- [x] 8. Proveedores LLM pluggables (Bedrock/Ollama/Anthropic/none). _R4, tech_
+- [x] 9. CLI `fuga` con salida en terminal. _R5_
+- [x] 10. Servidor MCP (`fuga_scan`/`fuga_prove`/`fuga_fix`). _R5_
+- [x] 11. Playground web (demo en línea). _R5_
+- [x] 12. Spec de alta fidelidad para el emulador de Firebase. _R2_
+- [x] 13. Tests unitarios del core (parser/evaluador/análisis/fix). _calidad_
+- [ ] 14. Despliegue del playground y publicación en npm.
+- [ ] 15. Soporte de reglas de Firebase Storage y RTDB (siguiente iteración).

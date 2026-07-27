@@ -1,0 +1,15 @@
+{
+  "name": "@fuga/core",
+  "version": "0.1.0",
+  "description": "Motor de FUGA: parser + evaluador de reglas Firestore, análisis estático, RAG de esquema/PII, y generación de reglas endurecidas.",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test dist/core.test.js",
+    "pretest": "npm run build"
+  },
+  "dependencies": {}
+}

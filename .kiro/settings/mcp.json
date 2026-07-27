@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "fuga": {
+      "command": "node",
+      "args": ["./packages/mcp/dist/bin.js"],
+      "disabled": false,
+      "autoApprove": ["fuga_scan", "fuga_prove"]
+    }
+  }
+}

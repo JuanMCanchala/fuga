@@ -1,0 +1,36 @@
+{
+  "name": "fuga-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FUGA - agente que prueba fugas de datos en reglas de seguridad BaaS (Firestore/Storage) y las repara con verificación de extremo a extremo.",
+  "license": "MIT",
+  "author": "Juan Manuel Canchala",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "fuga": "npm run --workspace @fuga/cli start --",
+    "web": "npm run --workspace @fuga/web dev"
+  },
+  "keywords": [
+    "firebase",
+    "firestore",
+    "security",
+    "rules",
+    "rag",
+    "mcp",
+    "agent",
+    "kiro",
+    "bedrock"
+  ],
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.4"
+  }
+}

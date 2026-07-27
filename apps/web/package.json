@@ -1,0 +1,21 @@
+{
+  "name": "@fuga/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Playground web de FUGA: pega tus reglas de Firestore y mira la fuga demostrada + el fix.",
+  "scripts": {
+    "dev": "next dev -p 3939",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@fuga/core": "0.1.0",
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0"
+  }
+}
