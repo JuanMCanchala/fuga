@@ -139,6 +139,9 @@ FUGA funciona **sin ningún LLM ni clave**: el fix determinista y el oráculo
 portátil garantizan resultados reproducibles. El LLM solo mejora la redacción del
 fix, y siempre se valida con el evaluador.
 
+Guía de Amazon Bedrock (habilitar modelos, inference profiles, IAM de mínimo
+privilegio): **[aws/README.md](./aws/README.md)**.
+
 ## Estructura
 
 Monorepo (`packages/core`, `packages/cli`, `packages/mcp`, `apps/web`). Ver
