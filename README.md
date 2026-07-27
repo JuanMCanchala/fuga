@@ -92,7 +92,8 @@ node packages/cli/dist/index.js fix
 node packages/cli/dist/index.js verify --rules firestore.rules.fuga
 ```
 
-> Publicado como `fuga` en npm: `npx fuga demo`.
+> Tras clonar y `npm run build`, el binario vive en `packages/cli/dist/index.js`.
+> Publicación en npm (`npx fuga`) planificada — ver `.kiro/specs/fuga-agent/tasks.md`.
 
 ## Demo en línea
 
