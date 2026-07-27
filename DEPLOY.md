@@ -1,5 +1,7 @@
 # Despliegue del playground
 
+**En vivo: https://fuga-two.vercel.app**
+
 El demo en línea es la app Next.js de `apps/web`. Corre el loop completo
 (scan → prove → fix → verify) con el motor portátil: **no necesita Java, ni
 emulador, ni claves de LLM** para funcionar.

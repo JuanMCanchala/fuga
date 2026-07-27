@@ -10,6 +10,8 @@ privilegio y **re-verifica** que la fuga desapareció.
 
 `scan` → `prove` → `fix` → `verify` · CLI · Web · MCP · RAG · Amazon Bedrock
 
+**▶ Demo en línea: https://fuga-two.vercel.app**  ·  **Repo: https://github.com/JuanMCanchala/fuga**
+
 </div>
 
 ---
@@ -94,11 +96,15 @@ node packages/cli/dist/index.js verify --rules firestore.rules.fuga
 
 ## Demo en línea
 
-Playground web (pega tus reglas → mira la fuga probada + el fix): **[ver DEPLOY.md](./DEPLOY.md)**
+**→ https://fuga-two.vercel.app** — pega tus reglas de Firestore y mira la fuga
+probada + el fix, en vivo. (Corre el loop completo con el motor portátil; sin
+Java ni claves.)
 
 ```bash
-npm run web   # http://localhost:3939
+npm run web   # local en http://localhost:3939
 ```
+
+Detalles de despliegue en [DEPLOY.md](./DEPLOY.md).
 
 ## Como servidor MCP (Kiro / Claude / Cursor)
 
