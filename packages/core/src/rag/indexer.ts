@@ -23,7 +23,21 @@ const DOC_RE = /\bdoc\s*\(\s*[A-Za-z_$][\w$]*\s*,\s*['"`]([A-Za-z0-9_\-]+)['"`]/
 // Campos: where('f', ...), orderBy('f'), y claves de objetos en set/add/updateDoc.
 const WHERE_RE = /\b(?:where|orderBy)\s*\(\s*['"`]([A-Za-z0-9_\-.]+)['"`]/g;
 const WRITE_CALL_RE = /\b(?:setDoc|addDoc|updateDoc)\s*\([^,]*,\s*\{([^}]*)\}/gs;
-const OBJ_KEY_RE = /([A-Za-z_$][\w$]*)\s*:/g;
+
+/**
+ * Extrae nombres de campo del cuerpo de un objeto literal. Soporta tanto la
+ * forma `clave: valor` como la abreviada `{ clave1, clave2 }` (shorthand), que
+ * es muy común en JS moderno. Toma el primer identificador de cada segmento
+ * separado por comas.
+ */
+function extractObjectKeys(body: string): string[] {
+  const keys: string[] = [];
+  for (const seg of body.split(',')) {
+    const m = seg.match(/^\s*([A-Za-z_$][\w$]*)/);
+    if (m) keys.push(m[1]);
+  }
+  return keys;
+}
 
 function collectMatches(re: RegExp, text: string, group = 1): string[] {
   const out: string[] = [];
@@ -46,11 +60,11 @@ export function indexClientCode(inputs: IndexInput[]): SchemaModel {
 
     for (const f of collectMatches(WHERE_RE, content)) fields.add(f.split('.')[0]);
 
-    // Claves de objetos escritos a Firestore.
+    // Claves de objetos escritos a Firestore (soporta `clave: valor` y shorthand).
     let wm: RegExpExecArray | null;
     WRITE_CALL_RE.lastIndex = 0;
     while ((wm = WRITE_CALL_RE.exec(content)) !== null) {
-      for (const k of collectMatches(OBJ_KEY_RE, wm[1])) fields.add(k);
+      for (const k of extractObjectKeys(wm[1])) fields.add(k);
     }
   }
 
