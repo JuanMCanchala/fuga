@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FUGA — Panel de Seguridad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#F6F8FC;--surface:#FFFFFF;--border:#E4E9F2;--ink:#111725;--muted:#5B6675;
+--accent:#5B3DF5;--danger:#E5322D;--high:#F59E0B;--medium:#EAB308;--ok:#0FA968;
+--font-heading:'Space Grotesk',sans-serif;--font-body:'Inter',sans-serif;--font-mono:'JetBrains Mono',monospace;
+--sidebar-w:260px;--radius:8px;--shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+--shadow-md:0 4px 12px rgba(0,0,0,.08);
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+html{font-size:16px;line-height:1.5}
+body{font-family:var(--font-body);background:var(--bg);color:var(--ink);min-height:100vh;display:flex}
+a{color:var(--accent);text-decoration:none}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{
+outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--radius)}
+button{cursor:pointer;font-family:inherit;border:none;background:none}
+h1,h2,h3,h4{font-family:var(--font-heading);font-weight:600}
+
+/* Sidebar */
+.sidebar{position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);background:linear-gradient(180deg,#1E1140 0%,#2A1B5E 100%);
+color:#fff;display:flex;flex-direction:column;z-index:100;transition:transform .25s ease}
+.sidebar-logo{padding:24px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sidebar-logo svg{flex-shrink:0}
+.sidebar-logo span{font-family:var(--font-heading);font-size:1.25rem;font-weight:700;letter-spacing:-.5px}
+.sidebar-nav{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:4px}
+.sidebar-nav button{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius);
+color:rgba(255,255,255,.7);font-size:.875rem;font-weight:500;width:100%;text-align:left;transition:background .15s,color .15s}
+.sidebar-nav button:hover{background:rgba(255,255,255,.08);color:#fff}
+.sidebar-nav button.active{background:rgba(91,61,245,.35);color:#fff}
+.sidebar-nav button svg{flex-shrink:0;opacity:.8}
+.sidebar-bottom{padding:16px 20px;border-top:1px solid rgba(255,255,255,.1)}
+.sidebar-bottom a{color:rgba(255,255,255,.6);font-size:.8rem;display:flex;align-items:center;gap:8px;transition:color .15s}
+.sidebar-bottom a:hover{color:#fff}
+
+/* Main */
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.topbar h1{font-size:1.25rem;font-weight:600}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:var(--radius);font-size:.875rem;font-weight:500;transition:background .15s,transform .1s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#4A2FD4}
+.btn-primary:active{transform:scale(.97)}
+.btn-outline{border:1px solid var(--border);background:var(--surface);color:var(--ink)}
+.btn-outline:hover{background:var(--bg)}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{background:#C42A26}
+.content{padding:32px;flex:1}
+
+/* Cards */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+.kpi-card .label{font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px}
+.kpi-card .value{font-family:var(--font-heading);font-size:1.75rem;font-weight:700}
+
+/* Severity */
+.sev-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+.sev-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:600}
+.sev-critical{background:rgba(229,50,45,.1);color:var(--danger)}
+.sev-high{background:rgba(245,158,11,.1);color:var(--high)}
+.sev-medium{background:rgba(234,179,8,.1);color:#92700C}
+.sev-low{background:rgba(91,102,117,.1);color:var(--muted)}
+.sev-info{background:rgba(91,61,245,.08);color:var(--accent)}
+
+/* Table */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.875rem}
+th{text-align:left;padding:10px 12px;font-weight:600;color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--border)}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:hover td{background:rgba(91,61,245,.02)}
+.expand-row td{background:var(--bg);padding:16px 24px}
+.expand-content{font-size:.8rem;line-height:1.6}
+
+/* Backend badges */
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:4px;font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.badge-firestore{background:rgba(255,167,38,.12);color:#E65100}
+.badge-rtdb{background:rgba(66,165,245,.12);color:#1565C0}
+.badge-supabase{background:rgba(62,207,142,.12);color:#1B5E20}
+
+/* Gauge */
+.gauge{width:120px;height:120px;position:relative;margin:0 auto 16px}
+.gauge svg{transform:rotate(-90deg)}
+.gauge-value{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-heading);font-size:1.5rem;font-weight:700}
+
+/* Form */
+.form-group{margin-bottom:20px}
+.form-group label{display:block;font-size:.8rem;font-weight:600;margin-bottom:6px;color:var(--ink)}
+.form-group textarea,.form-group input,.form-group select{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);font-family:var(--font-mono);font-size:.8rem;background:var(--surface);color:var(--ink);transition:border-color .15s}
+.form-group textarea:focus,.form-group input:focus,.form-group select:focus{border-color:var(--accent)}
+.form-group textarea{min-height:160px;resize:vertical}
+.form-group select{font-family:var(--font-body)}
+.example-btns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+
+/* Code block */
+.code-block{background:#1E1140;color:#E8E0FF;border-radius:var(--radius);padding:16px;overflow-x:auto;font-family:var(--font-mono);font-size:.8rem;line-height:1.7;position:relative}
+.code-block .copy-btn{position:absolute;top:8px;right:8px;background:rgba(255,255,255,.1);color:#fff;padding:4px 10px;border-radius:4px;font-size:.7rem}
+.code-block .copy-btn:hover{background:rgba(255,255,255,.2)}
+
+/* Exfiltrated */
+.exfil-block{background:rgba(229,50,45,.05);border:1px solid rgba(229,50,45,.2);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.exfil-block pre{color:var(--danger);font-family:var(--font-mono);font-size:.78rem;white-space:pre-wrap;word-break:break-all}
+.exfil-header{font-size:.8rem;font-weight:600;color:var(--danger);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+
+/* Banner */
+.banner{padding:14px 20px;border-radius:var(--radius);font-size:.875rem;font-weight:500;display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.banner-ok{background:rgba(15,169,104,.08);border:1px solid rgba(15,169,104,.25);color:#065F38}
+.banner-danger{background:rgba(229,50,45,.08);border:1px solid rgba(229,50,45,.25);color:var(--danger)}
+
+/* Filters */
+.filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-btn{padding:5px 12px;border-radius:16px;font-size:.75rem;font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .15s}
+.filter-btn.active,.filter-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(91,61,245,.05)}
+
+/* Empty */
+.empty-state{text-align:center;padding:60px 20px}
+.empty-state svg{margin-bottom:16px;opacity:.5}
+.empty-state p{color:var(--muted);margin-bottom:16px}
+
+/* Loading */
+.loading{display:flex;align-items:center;justify-content:center;padding:60px}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* History mini */
+.history-list{display:flex;flex-direction:column;gap:8px}
+.history-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);font-size:.8rem}
+
+/* Section heading */
+.section-heading{font-size:1rem;font-weight:600;margin-bottom:16px;color:var(--ink)}
+
+/* Hamburger */
+.hamburger{display:none;position:fixed;top:12px;left:12px;z-index:200;background:var(--accent);color:#fff;width:40px;height:40px;border-radius:var(--radius);align-items:center;justify-content:center}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:90}
+
+@media(max-width:768px){
+.sidebar{transform:translateX(-100%)}
+.sidebar.open{transform:translateX(0)}
+.main{margin-left:0}
+.hamburger{display:flex}
+.overlay.show{display:block}
+.topbar{padding:16px 16px 16px 60px}
+.content{padding:16px}
+.kpi-row{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<button class="hamburger" aria-label="Abrir menu" id="hamburger">
+<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h14M3 10h14M3 14h14"/></svg>
+</button>
+<div class="overlay" id="overlay"></div>
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-logo">
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 2L4 8v8c0 7.2 5.1 13.9 12 16 6.9-2.1 12-8.8 12-16V8L16 2z" fill="#5B3DF5" opacity=".85"/><path d="M16 6l-8 4v5.6c0 5 3.6 9.7 8 11.2 4.4-1.5 8-6.2 8-11.2V10l-8-4z" fill="#7C5CFC"/><path d="M13 15l2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<span>FUGA</span>
+</div>
+<nav class="sidebar-nav" id="nav"></nav>
+<div class="sidebar-bottom"><a href="/"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 1L1 7l6 6M1 7h12"/></svg> Volver al sitio</a></div>
+</aside>
+<main class="main">
+<header class="topbar" id="topbar"></header>
+<div class="content" id="content"></div>
+</main>
+<script>
+const ICONS={
+resumen:'<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="14" height="14" rx="2"/><path d="M6 6h6M6 9h4M6 12h5"/></svg>',
+proyectos:'<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 5h14M2 5v9a2 2 0 002 2h10a2 2 0 002-2V5M7 2h4l1 3H6L7 2z"/></svg>',
+escaneo:'<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="9" r="6"/><path d="M9 5v4l2.5 1.5"/></svg>',
+reportes:'<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 2h7l4 4v10a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z"/><path d="M11 2v4h4M7 9h4M7 12h3"/></svg>',
+shield:'<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 1L2 4.5v4c0 4.6 3 8.7 7 10 4-1.3 7-5.4 7-10v-4L9 1z"/></svg>',
+check:'<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l3 3 5-5"/></svg>',
+x:'<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l8 8M11 3l-8 8"/></svg>',
+copy:'<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="8" height="8" rx="1"/><path d="M2 10V3a1 1 0 011-1h7"/></svg>',
+download:'<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 1v9M3 7l4 4 4-4M2 12h10"/></svg>',
+};
+const NAV_ITEMS=[
+{id:'resumen',label:'Resumen',icon:ICONS.resumen},
+{id:'proyectos',label:'Proyectos',icon:ICONS.proyectos},
+{id:'escaneo',label:'Escaneo nuevo',icon:ICONS.escaneo},
+{id:'reportes',label:'Reportes',icon:ICONS.reportes}
+];
+const EXAMPLES={
+firestore:{backend:'firestore',rules:`rules_version = '2';\nservice cloud.firestore {\n  match /databases/{db}/documents {\n    match /pacientes/{id} {\n      allow read: if true;\n    }\n    match /pagos/{id} {\n      allow read, write: if true;\n    }\n  }\n}`},
+rtdb:{backend:'rtdb',rules:`{\n  "rules": {\n    "usuarios": { ".read": true },\n    "pagos": { ".read": true, ".write": true }\n  }\n}`},
+supabase:{backend:'supabase',rules:`create table pagos (id uuid, user_id uuid, numeroTarjeta text, cvv text);\ncreate table usuarios (id uuid, email text);\nalter table usuarios enable row level security;\ncreate policy public_read on usuarios for select using (true);`}
+};
+
+let state={section:'resumen',projects:JSON.parse(localStorage.getItem('fuga_projects')||'[]'),viewing:null,loading:false,error:null};
+function save(){localStorage.setItem('fuga_projects',JSON.stringify(state.projects))}
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+function fmtDate(d){if(!d)return'—';const dt=new Date(d);return dt.toLocaleDateString('es',{day:'2-digit',month:'short',year:'numeric'})+' '+dt.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}
+function riskColor(r){if(r>=75)return'var(--danger)';if(r>=50)return'var(--high)';if(r>=25)return'var(--medium)';return'var(--ok)'}
+function sevColor(s){return{critical:'var(--danger)',high:'var(--high)',medium:'var(--medium)',low:'var(--muted)',info:'var(--accent)'}[s]||'var(--muted)'}
+function sevClass(s){return'sev-'+(s||'info')}
+function backendLabel(b){return{firestore:'Firestore',rtdb:'Realtime DB',supabase:'Supabase'}[b]||b||'Auto'}
+function backendClass(b){return'badge-'+(b||'firestore')}
+function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+function navigate(sec,proj){state.section=sec;state.viewing=proj||null;state.error=null;render()}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show')}
+
+// Render engine
+function render(){
+const nav=document.getElementById('nav');
+nav.innerHTML=NAV_ITEMS.map(n=>`<button class="${state.section===n.id&&!state.viewing?'active':''}" data-nav="${n.id}">${n.icon} ${n.label}</button>`).join('');
+nav.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{navigate(b.dataset.nav);closeSidebar()}));
+const topbar=document.getElementById('topbar');
+let title='Resumen';
+if(state.viewing)title=state.viewing.name;
+else if(state.section==='proyectos')title='Proyectos';
+else if(state.section==='escaneo')title='Escaneo nuevo';
+else if(state.section==='reportes')title='Reportes';
+topbar.innerHTML=`<h1>${escHtml(title)}</h1><button class="btn btn-primary" id="topNewScan">${ICONS.escaneo} Nuevo escaneo</button>`;
+document.getElementById('topNewScan').addEventListener('click',()=>{navigate('escaneo');closeSidebar()});
+const c=document.getElementById('content');
+if(state.loading){c.innerHTML='<div class="loading"><div class="spinner"></div></div>';return}
+if(state.error){c.innerHTML=`<div class="banner banner-danger">${ICONS.x} ${escHtml(state.error)}</div>`;return}
+if(state.viewing)renderDetalle(c);
+else if(state.section==='resumen')renderResumen(c);
+else if(state.section==='proyectos')renderProyectos(c);
+else if(state.section==='escaneo')renderEscaneo(c);
+else if(state.section==='reportes')renderReportes(c);
+}
+
+function renderResumen(el){
+const allScans=state.projects.flatMap(p=>p.scans.map(s=>({...s,project:p.name,backend:p.backend})));
+const totalProj=state.projects.length;
+const totalScans=allScans.length;
+const avgRisk=totalScans?Math.round(allScans.reduce((a,s)=>a+s.risk,0)/totalScans):0;
+const openLeaks=allScans.reduce((a,s)=>a+(s.exploit?s.exploit.leaks.filter(l=>l.verdict==='ALLOW').length:0),0);
+if(!totalProj){
+el.innerHTML=`<div class="empty-state">${ICONS.shield}<p>No hay proyectos aun. Crea tu primer escaneo para detectar fugas.</p><button class="btn btn-primary" id="emptyNew">${ICONS.escaneo} Crear tu primer escaneo</button></div>`;
+document.getElementById('emptyNew').addEventListener('click',()=>navigate('escaneo'));return}
+let sevCounts={critical:0,high:0,medium:0};
+allScans.forEach(s=>{if(s.scan&&s.scan.summary){sevCounts.critical+=s.scan.summary.critical||0;sevCounts.high+=s.scan.summary.high||0;sevCounts.medium+=s.scan.summary.medium||0}});
+const recent=allScans.sort((a,b)=>new Date(b.at)-new Date(a.at)).slice(0,8);
+el.innerHTML=`
+<div class="kpi-row">
+<div class="kpi-card"><div class="label">Proyectos</div><div class="value">${totalProj}</div></div>
+<div class="kpi-card"><div class="label">Escaneos totales</div><div class="value">${totalScans}</div></div>
+<div class="kpi-card"><div class="label">Riesgo promedio</div><div class="value" style="color:${riskColor(avgRisk)}">${avgRisk}</div></div>
+<div class="kpi-card"><div class="label">Fugas abiertas</div><div class="value" style="color:${openLeaks?'var(--danger)':'var(--ok)'}">${openLeaks}</div></div>
+</div>
+<h3 class="section-heading">Desglose por severidad</h3>
+<div class="sev-row">
+<span class="sev-badge sev-critical">Critico: ${sevCounts.critical}</span>
+<span class="sev-badge sev-high">Alto: ${sevCounts.high}</span>
+<span class="sev-badge sev-medium">Medio: ${sevCounts.medium}</span>
+</div>
+<h3 class="section-heading">Escaneos recientes</h3>
+${recent.length?`<div class="table-wrap"><table><thead><tr><th>Proyecto</th><th>Backend</th><th>Riesgo</th><th>Fecha</th></tr></thead><tbody>${recent.map(s=>`<tr><td>${escHtml(s.project)}</td><td><span class="badge ${backendClass(s.backend)}">${backendLabel(s.backend)}</span></td><td style="color:${riskColor(s.risk)};font-weight:600">${s.risk}</td><td>${fmtDate(s.at)}</td></tr>`).join('')}</tbody></table></div>`:'<p style="color:var(--muted)">Sin escaneos recientes.</p>'}`;
+}
+
+function renderProyectos(el){
+if(!state.projects.length){el.innerHTML=`<div class="empty-state">${ICONS.proyectos}<p>No hay proyectos registrados.</p><button class="btn btn-primary" id="emptyProj">${ICONS.escaneo} Crear escaneo</button></div>`;document.getElementById('emptyProj').addEventListener('click',()=>navigate('escaneo'));return}
+el.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Backend</th><th>Riesgo</th><th>Ultimo escaneo</th><th></th></tr></thead><tbody>${state.projects.map(p=>{
+const last=p.scans.length?p.scans[p.scans.length-1]:null;
+return`<tr><td style="font-weight:600">${escHtml(p.name)}</td><td><span class="badge ${backendClass(p.backend)}">${backendLabel(p.backend)}</span></td><td style="color:${riskColor(last?last.risk:0)};font-weight:600">${last?last.risk:'—'}</td><td>${fmtDate(last?last.at:p.createdAt)}</td><td><button class="btn btn-outline btn-sm" data-view="${p.id}">Ver</button></td></tr>`}).join('')}</tbody></table></div>`;
+el.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{const p=state.projects.find(x=>x.id===b.dataset.view);if(p)navigate('detalle',p)}))
+}
+
+function renderEscaneo(el){
+el.innerHTML=`
+<div class="form-group"><label>Nombre del proyecto</label><input id="fName" placeholder="Mi app Firebase"></div>
+<div class="form-group"><label>Backend</label><select id="fBackend"><option value="">Auto-detectar</option><option value="firestore">Firestore</option><option value="rtdb">Realtime DB</option><option value="supabase">Supabase</option></select></div>
+<div class="form-group"><label>Reglas / Politicas</label><textarea id="fRules" placeholder="Pega tus reglas de seguridad aqui..."></textarea></div>
+<div class="form-group"><label>Codigo cliente (opcional)</label><textarea id="fCode" placeholder="Pega fragmentos de codigo cliente para mejorar el analisis..." style="min-height:100px"></textarea></div>
+<h3 class="section-heading">Ejemplos vulnerables</h3>
+<div class="example-btns">
+<button class="btn btn-outline btn-sm" id="exFirestore">Firestore</button>
+<button class="btn btn-outline btn-sm" id="exRtdb">Realtime DB</button>
+<button class="btn btn-outline btn-sm" id="exSupabase">Supabase</button>
+</div>
+<button class="btn btn-primary" id="doScan">${ICONS.shield} Escanear</button>`;
+document.getElementById('exFirestore').addEventListener('click',()=>{document.getElementById('fRules').value=EXAMPLES.firestore.rules;document.getElementById('fBackend').value='firestore'});
+document.getElementById('exRtdb').addEventListener('click',()=>{document.getElementById('fRules').value=EXAMPLES.rtdb.rules;document.getElementById('fBackend').value='rtdb'});
+document.getElementById('exSupabase').addEventListener('click',()=>{document.getElementById('fRules').value=EXAMPLES.supabase.rules;document.getElementById('fBackend').value='supabase'});
+document.getElementById('doScan').addEventListener('click',doScan);
+}
+
+async function doScan(){
+const name=document.getElementById('fName').value.trim()||'Proyecto sin nombre';
+const backend=document.getElementById('fBackend').value||undefined;
+const rules=document.getElementById('fRules').value.trim();
+const code=document.getElementById('fCode').value.trim()||undefined;
+if(!rules){state.error='Debes ingresar las reglas de seguridad.';render();return}
+state.loading=true;render();
+try{
+const res=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rules,code,backend})});
+const data=await res.json();
+if(!res.ok)throw new Error(data.error||'Error del servidor');
+let proj=state.projects.find(p=>p.name===name);
+if(!proj){proj={id:genId(),name,backend:data.backend||backend||'firestore',rules,code:code||'',createdAt:new Date().toISOString(),scans:[]};state.projects.push(proj)}
+else{proj.backend=data.backend||proj.backend}
+proj.scans.push({at:new Date().toISOString(),risk:data.scan?data.scan.riskScore:0,backend:data.backend,scan:data.scan||null,exploit:data.exploit||null,fix:data.fix||null,verify:data.verify||null});
+save();state.loading=false;navigate('detalle',proj);
+}catch(e){state.loading=false;state.error=e.message;render()}}
+
+function renderDetalle(el){
+const p=state.viewing;if(!p||!p.scans.length){el.innerHTML='<p>Sin datos.</p>';return}
+const last=p.scans[p.scans.length-1];
+const risk=last.risk||0;
+const scan=last.scan;const exploit=last.exploit;const fix=last.fix;const verify=last.verify;
+
+// Gauge
+const circ=2*Math.PI*45;const offset=circ-(risk/100)*circ;
+let html=`<div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-bottom:24px">
+<div class="gauge"><svg width="120" height="120" viewBox="0 0 120 120"><circle cx="60" cy="60" r="45" fill="none" stroke="var(--border)" stroke-width="10"/><circle cx="60" cy="60" r="45" fill="none" stroke="${riskColor(risk)}" stroke-width="10" stroke-dasharray="${circ}" stroke-dashoffset="${offset}" stroke-linecap="round"/></svg><div class="gauge-value" style="color:${riskColor(risk)}">${risk}</div></div>
+<div><h2 style="margin-bottom:4px">${escHtml(p.name)}</h2><span class="badge ${backendClass(p.backend)}">${backendLabel(p.backend)}</span><span style="margin-left:12px;color:var(--muted);font-size:.8rem">${fmtDate(last.at)}</span></div></div>`;
+
+// Verify banner
+if(verify){
+if(verify.clean)html+=`<div class="banner banner-ok">${ICONS.check} Fuga eliminada y verificada</div>`;
+else html+=`<div class="banner banner-danger">${ICONS.x} La verificacion detecto accesos residuales (${verify.remaining||'?'} restantes)</div>`}
+
+// Severity cards
+if(scan&&scan.summary){
+html+=`<div class="sev-row"><span class="sev-badge sev-critical">Critico: ${scan.summary.critical||0}</span><span class="sev-badge sev-high">Alto: ${scan.summary.high||0}</span><span class="sev-badge sev-medium">Medio: ${scan.summary.medium||0}</span></div>`}
+
+// Findings
+if(scan&&scan.findings&&scan.findings.length){
+html+=`<h3 class="section-heading">Hallazgos</h3><div class="filters" id="filters"></div><div class="table-wrap"><table id="findingsTable"><thead><tr><th>Sev.</th><th>Codigo</th><th>Titulo</th><th>Ubicacion</th><th></th></tr></thead><tbody>`;
+scan.findings.forEach((f,i)=>{
+html+=`<tr class="finding-row" data-sev="${f.severity}"><td><span class="sev-badge ${sevClass(f.severity)}">${f.severity}</span></td><td style="font-family:var(--font-mono);font-size:.75rem">${escHtml(f.code||'')}</td><td>${escHtml(f.title||'')}</td><td style="font-family:var(--font-mono);font-size:.75rem">${escHtml(f.matchPath||'')}</td><td><button class="btn btn-outline btn-sm toggle-detail" data-idx="${i}">+</button></td></tr>`;
+html+=`<tr class="expand-row" id="detail-${i}" style="display:none"><td colspan="5"><div class="expand-content">`;
+if(f.rationale)html+=`<p><strong>Razon:</strong> ${escHtml(f.rationale)}</p>`;
+if(f.recommendation)html+=`<p><strong>Recomendacion:</strong> ${escHtml(f.recommendation)}</p>`;
+if(f.piiFields&&f.piiFields.length)html+=`<p><strong>PII en riesgo:</strong> ${f.piiFields.map(x=>escHtml(x)).join(', ')}</p>`;
+html+=`</div></td></tr>`});
+html+=`</tbody></table></div>`}
+
+// Exploit
+if(exploit&&exploit.leaks&&exploit.leaks.length){
+html+=`<h3 class="section-heading" style="margin-top:24px">Datos exfiltrados</h3><div class="exfil-header">${ICONS.x} ${exploit.leaks.length} fuga(s), ${exploit.totalDocsExposed||0} documento(s) expuesto(s)</div>`;
+exploit.leaks.forEach(l=>{
+html+=`<div class="exfil-block"><div style="font-size:.75rem;color:var(--muted);margin-bottom:6px"><strong>${l.method||'GET'}</strong> ${escHtml(l.path||l.collection||'')}</div>`;
+if(l.exfiltrated)html+=`<pre>${escHtml(typeof l.exfiltrated==='string'?l.exfiltrated:JSON.stringify(l.exfiltrated,null,2))}</pre>`;
+html+=`</div>`})}
+
+// Fix
+if(fix&&fix.rules){
+html+=`<h3 class="section-heading" style="margin-top:24px">Fix generado</h3><div class="code-block"><button class="copy-btn" id="copyFix">${ICONS.copy} Copiar</button><pre>${escHtml(fix.rules)}</pre></div>`;
+if(fix.source)html+=`<p style="font-size:.75rem;color:var(--muted);margin-top:6px">Fuente: ${escHtml(fix.source)}${fix.validated?' (validado)':''}</p>`}
+
+// History
+if(p.scans.length>1){
+html+=`<h3 class="section-heading" style="margin-top:24px">Historial</h3><div class="history-list">${p.scans.map(s=>`<div class="history-item"><span>${fmtDate(s.at)}</span><span style="color:${riskColor(s.risk)};font-weight:600">${s.risk}</span></div>`).join('')}</div>`}
+
+html+=`<div style="margin-top:24px"><button class="btn btn-outline" id="backToProj">&larr; Volver a proyectos</button></div>`;
+el.innerHTML=html;
+
+// Wire events
+document.getElementById('backToProj')?.addEventListener('click',()=>navigate('proyectos'));
+if(document.getElementById('copyFix')){document.getElementById('copyFix').addEventListener('click',function(){navigator.clipboard.writeText(fix.rules).then(()=>{this.innerHTML=ICONS.check+' Copiado';setTimeout(()=>{this.innerHTML=ICONS.copy+' Copiar'},2000)})})}
+// Filters
+const filterEl=document.getElementById('filters');
+if(filterEl&&scan&&scan.findings){
+const sevs=['critical','high','medium','low','info'];
+let activeSev=null;
+filterEl.innerHTML='<button class="filter-btn active" data-f="all">Todos</button>'+sevs.map(s=>`<button class="filter-btn" data-f="${s}"><span class="sev-badge ${sevClass(s)}" style="padding:2px 6px">${s}</span></button>`).join('');
+filterEl.querySelectorAll('.filter-btn').forEach(btn=>btn.addEventListener('click',()=>{
+filterEl.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+activeSev=btn.dataset.f==='all'?null:btn.dataset.f;
+document.querySelectorAll('.finding-row').forEach(r=>{r.style.display=(!activeSev||r.dataset.sev===activeSev)?'':'none';const det=document.getElementById('detail-'+r.querySelector('.toggle-detail')?.dataset.idx);if(det)det.style.display='none'})}))}
+// Toggle details
+document.querySelectorAll('.toggle-detail').forEach(btn=>btn.addEventListener('click',()=>{const row=document.getElementById('detail-'+btn.dataset.idx);if(row){const vis=row.style.display!=='none';row.style.display=vis?'none':'';btn.textContent=vis?'+':'-'}}))
+}
+
+function renderReportes(el){
+if(!state.projects.length){el.innerHTML=`<div class="empty-state">${ICONS.reportes}<p>No hay proyectos para generar reportes.</p></div>`;return}
+el.innerHTML=`<h3 class="section-heading">Descargar reportes</h3><div class="table-wrap"><table><thead><tr><th>Proyecto</th><th>Backend</th><th>Ultimo riesgo</th><th></th></tr></thead><tbody>${state.projects.map(p=>{
+const last=p.scans.length?p.scans[p.scans.length-1]:null;
+return`<tr><td>${escHtml(p.name)}</td><td><span class="badge ${backendClass(p.backend)}">${backendLabel(p.backend)}</span></td><td style="color:${riskColor(last?last.risk:0)};font-weight:600">${last?last.risk:'—'}</td><td><button class="btn btn-outline btn-sm" data-dl="${p.id}">${ICONS.download} Descargar</button></td></tr>`}).join('')}</tbody></table></div>`;
+el.querySelectorAll('[data-dl]').forEach(btn=>btn.addEventListener('click',()=>{
+const p=state.projects.find(x=>x.id===btn.dataset.dl);if(!p)return;
+const last=p.scans.length?p.scans[p.scans.length-1]:null;
+const report={proyecto:p.name,backend:p.backend,fecha:last?last.at:p.createdAt,riesgo:last?last.risk:null,scan:last?last.scan:null,exploit:last?last.exploit:null,fix:last?last.fix:null,verify:last?last.verify:null};
+const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'});
+const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`fuga-${p.name.replace(/\s+/g,'-').toLowerCase()}.json`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}))}
+
+// Init
+document.getElementById('hamburger').addEventListener('click',()=>{document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show')});
+document.getElementById('overlay').addEventListener('click',closeSidebar);
+render();
+</script>
+</body>
+</html>
