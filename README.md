@@ -130,6 +130,7 @@ Configurable con `FUGA_LLM`:
 
 | Valor | Motor | Uso |
 |-------|-------|-----|
+| `kiro` | **Kiro CLI** (headless) | Reescribe las reglas usando tus créditos de Kiro (local) |
 | `bedrock` | **Amazon Bedrock** (AWS) | Reescritura de reglas en la nube |
 | `ollama` | Modelo **local** | Clasificación de PII sin enviar tu esquema a la nube |
 | `anthropic` | Claude API | Alternativa en la nube |

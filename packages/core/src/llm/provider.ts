@@ -146,6 +146,56 @@ class AnthropicProvider implements LlmProvider {
   }
 }
 
+// --- Kiro (CLI headless) -----------------------------------------------------
+
+/**
+ * Usa el CLI de Kiro en modo headless como motor LLM. Consume los créditos de
+ * Kiro del usuario. Solo funciona donde `kiro-cli` está instalado y logueado
+ * (uso local / CLI), NO en despliegues serverless. Se activa con FUGA_LLM=kiro.
+ */
+class KiroProvider implements LlmProvider {
+  name = 'kiro';
+  private bin = process.env.FUGA_KIRO_BIN ?? 'kiro-cli';
+
+  async available(): Promise<boolean> {
+    return process.env.FUGA_LLM === 'kiro';
+  }
+
+  async complete(messages: LlmMessage[]): Promise<string> {
+    const system = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n');
+    const user = messages.filter((m) => m.role === 'user').map((m) => m.content).join('\n');
+    const prompt = (system ? `[contexto]\n${system}\n\n` : '') + user;
+    try {
+      const { spawn } = await import('node:child_process');
+      return await new Promise<string>((resolve) => {
+        // --trust-tools= (vacío) => chat puro, sin acceso a herramientas.
+        const child = spawn(this.bin, ['chat', '--no-interactive', '--trust-tools=', prompt], {
+          env: process.env,
+        });
+        let out = '';
+        child.stdout?.on('data', (d) => (out += d.toString()));
+        child.on('error', () => resolve(''));
+        child.on('close', () => resolve(stripAnsi(out)));
+        setTimeout(() => {
+          try {
+            child.kill();
+          } catch {
+            /* noop */
+          }
+          resolve(stripAnsi(out));
+        }, 120_000);
+      });
+    } catch {
+      return '';
+    }
+  }
+}
+
+function stripAnsi(s: string): string {
+  // Quita secuencias de escape ANSI (colores, cursor, spinners) del CLI.
+  return s.replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, '').replace(/\r/g, '');
+}
+
 // --- Null (sin LLM) ----------------------------------------------------------
 
 class NullProvider implements LlmProvider {
@@ -159,6 +209,7 @@ class NullProvider implements LlmProvider {
 }
 
 const PROVIDERS: LlmProvider[] = [
+  new KiroProvider(),
   new BedrockProvider(),
   new OllamaProvider(),
   new AnthropicProvider(),
