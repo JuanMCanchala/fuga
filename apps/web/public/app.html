@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FUGA — Consola de Seguridad</title>
+<link rel="icon" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#F6F8FC;--surface:#FFFFFF;--border:#E4E9F2;--ink:#111725;--muted:#5B6675;
+--accent:#5B3DF5;--accent-light:#EEF0FE;
+--critical:#E5322D;--high:#F59E0B;--medium:#EAB308;--low:#64748B;--ok:#0FA968;
+--firestore:#6D3BEB;--rtdb:#0EA5E9;--supabase:#EC4899;
+--radius:14px;--radius-sm:8px;
+--shadow:0 1px 3px rgba(0,0,0,.04),0 4px 12px rgba(0,0,0,.06);
+--shadow-lg:0 4px 24px rgba(0,0,0,.08);
+--font-title:'Space Grotesk',sans-serif;
+--font-body:'Inter',sans-serif;
+--font-mono:'JetBrains Mono',monospace;
+}
+html{font-size:15px;scroll-behavior:smooth}
+body{font-family:var(--font-body);background:var(--bg);color:var(--ink);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,textarea,select{font-family:inherit;font-size:inherit}
+h1,h2,h3,h4{font-family:var(--font-title);font-weight:600}
+code,pre{font-family:var(--font-mono);font-size:.88rem}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
+
+/* LOGIN */
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--bg) 0%,var(--accent-light) 100%);padding:24px}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);width:100%;max-width:420px;padding:40px 36px}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:24px;justify-content:center}
+.login-logo svg{width:32px;height:32px}
+.login-logo span{font-family:var(--font-title);font-size:1.5rem;font-weight:700;color:var(--ink)}
+.login-title{text-align:center;font-size:1.15rem;color:var(--ink);margin-bottom:28px;font-weight:500}
+.login-field{margin-bottom:16px}
+.login-field label{display:block;font-size:.82rem;font-weight:500;color:var(--muted);margin-bottom:6px}
+.login-field input{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.93rem;transition:border .2s}
+.login-field input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-light)}
+.btn-primary{display:block;width:100%;padding:12px;background:var(--accent);color:#fff;border-radius:var(--radius-sm);font-weight:600;font-size:.95rem;transition:background .2s,transform .1s}
+.btn-primary:hover{background:#4A2FD4}
+.btn-primary:active{transform:scale(.98)}
+.login-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--muted);font-size:.82rem}
+.login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.btn-social{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.88rem;font-weight:500;margin-bottom:10px;transition:background .15s,border .15s}
+.btn-social:hover{background:var(--accent-light);border-color:var(--accent)}
+.btn-social svg{width:18px;height:18px}
+.login-demo{display:block;text-align:center;margin-top:18px;font-size:.85rem;color:var(--accent);font-weight:500}
+.login-demo:hover{text-decoration:underline}
+.login-value{position:absolute;left:0;top:0;width:50%;height:100%;display:flex;flex-direction:column;justify-content:center;padding:48px;background:linear-gradient(135deg,#5B3DF5 0%,#3B1FC5 100%);color:#fff;border-radius:var(--radius) 0 0 var(--radius)}
+@media(max-width:900px){.login-value{display:none}}
+
+/* APP SHELL */
+.app-shell{display:grid;grid-template-columns:240px 1fr;grid-template-rows:56px 1fr;min-height:100vh}
+.topbar{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:0 24px;background:var(--surface);border-bottom:1px solid var(--border);z-index:100;position:sticky;top:0}
+.topbar-logo{display:flex;align-items:center;gap:8px;font-family:var(--font-title);font-weight:700;font-size:1.1rem;color:var(--ink)}
+.topbar-logo svg{width:24px;height:24px}
+.topbar-search{flex:1;max-width:360px;margin-left:24px;position:relative}
+.topbar-search input{width:100%;padding:8px 12px 8px 36px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;background:var(--bg)}
+.topbar-search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted)}
+.topbar-actions{margin-left:auto;display:flex;align-items:center;gap:12px}
+.btn-new-scan{padding:8px 16px;background:var(--accent);color:#fff;border-radius:var(--radius-sm);font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:6px;transition:background .15s}
+.btn-new-scan:hover{background:#4A2FD4}
+.btn-new-scan svg{width:14px;height:14px}
+.user-menu{position:relative}
+.user-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:600;cursor:pointer}
+.user-dropdown{position:absolute;right:0;top:44px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow-lg);min-width:180px;padding:8px 0;display:none;z-index:200}
+.user-dropdown.show{display:block}
+.user-dropdown-item{display:block;width:100%;padding:8px 16px;text-align:left;font-size:.85rem;color:var(--ink);transition:background .1s}
+.user-dropdown-item:hover{background:var(--accent-light)}
+.user-dropdown-name{padding:8px 16px 4px;font-size:.82rem;font-weight:600;color:var(--ink);border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:4px}
+
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:16px 12px;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);font-size:.88rem;font-weight:500;color:var(--muted);transition:background .15s,color .15s;cursor:pointer}
+.sidebar-item:hover{background:var(--accent-light);color:var(--ink)}
+.sidebar-item.active{background:var(--accent-light);color:var(--accent);font-weight:600}
+.sidebar-item svg{width:18px;height:18px;flex-shrink:0}
+
+.main-content{padding:28px 32px;overflow-y:auto;max-height:calc(100vh - 56px)}
+@media(max-width:768px){
+.app-shell{grid-template-columns:1fr}
+.sidebar{position:fixed;left:-260px;top:56px;bottom:0;width:240px;z-index:99;transition:left .25s}
+.sidebar.open{left:0}
+.main-content{padding:20px 16px}
+}
+
+/* CARDS & COMPONENTS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)}
+.card-title{font-size:.92rem;font-weight:600;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.03em}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{padding:20px;display:flex;align-items:flex-start;gap:14px}
+.kpi-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.kpi-icon svg{width:20px;height:20px}
+.kpi-value{font-family:var(--font-title);font-size:1.6rem;font-weight:700;line-height:1.1}
+.kpi-label{font-size:.8rem;color:var(--muted);margin-top:2px}
+.kpi-trend{font-size:.72rem;font-weight:600;margin-top:4px}
+.kpi-trend.up{color:var(--critical)}
+.kpi-trend.down{color:var(--ok)}
+
+.charts-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:24px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600;line-height:1}
+.badge-critical{background:#FEE2E2;color:var(--critical)}
+.badge-high{background:#FEF3C7;color:#92400E}
+.badge-medium{background:#FEF9C3;color:#854D0E}
+.badge-low{background:#F1F5F9;color:var(--low)}
+.badge-ok{background:#D1FAE5;color:#065F46}
+.badge-firestore{background:#EDE9FE;color:var(--firestore)}
+.badge-rtdb{background:#E0F2FE;color:var(--rtdb)}
+.badge-supabase{background:#FCE7F3;color:var(--supabase)}
+
+.finding-card{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;transition:box-shadow .15s}
+.finding-card:hover{box-shadow:var(--shadow)}
+.finding-header{display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;user-select:none}
+.finding-header svg{width:16px;height:16px;color:var(--muted);transition:transform .2s}
+.finding-header.open svg.chevron{transform:rotate(90deg)}
+.finding-title{flex:1;font-weight:600;font-size:.92rem}
+.finding-body{padding:0 20px 20px;display:none;border-top:1px solid var(--border);padding-top:16px}
+.finding-body.open{display:block}
+.finding-section{margin-bottom:16px}
+.finding-section h4{font-size:.82rem;color:var(--muted);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.02em}
+.finding-section p{font-size:.88rem;color:var(--ink);line-height:1.6}
+.data-table{width:100%;border-collapse:collapse;font-size:.84rem;margin-top:8px}
+.data-table th{text-align:left;padding:8px 12px;background:var(--bg);font-weight:600;color:var(--muted);border:1px solid var(--border)}
+.data-table td{padding:8px 12px;border:1px solid var(--border)}
+.data-table .pii{color:var(--critical);font-weight:600}
+
+.code-block{position:relative;background:#1E1E2E;color:#CDD6F4;padding:16px 20px;border-radius:var(--radius-sm);overflow-x:auto;font-size:.82rem;line-height:1.6}
+.code-block .btn-copy{position:absolute;top:8px;right:8px;padding:6px 10px;background:rgba(255,255,255,.1);color:#fff;border-radius:6px;font-size:.72rem;font-weight:500;transition:background .15s}
+.code-block .btn-copy:hover{background:rgba(255,255,255,.2)}
+
+.verify-banner{display:flex;align-items:center;gap:12px;padding:16px 20px;border-radius:var(--radius-sm);margin:16px 0}
+.verify-banner.clean{background:#D1FAE5;border:1px solid #6EE7B7;color:#065F46}
+.verify-banner.dirty{background:#FEE2E2;border:1px solid #FCA5A5;color:#7F1D1D}
+.verify-banner svg{width:20px;height:20px;flex-shrink:0}
+
+/* WIZARD */
+.wizard-steps{display:flex;align-items:center;gap:8px;margin-bottom:32px}
+.wizard-step{display:flex;align-items:center;gap:8px}
+.wizard-step-num{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:600;color:var(--muted)}
+.wizard-step.active .wizard-step-num{border-color:var(--accent);background:var(--accent);color:#fff}
+.wizard-step.done .wizard-step-num{border-color:var(--ok);background:var(--ok);color:#fff}
+.wizard-step-label{font-size:.82rem;color:var(--muted);font-weight:500}
+.wizard-step.active .wizard-step-label{color:var(--ink);font-weight:600}
+.wizard-connector{width:32px;height:2px;background:var(--border);border-radius:1px}
+.backend-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.backend-card{padding:24px;border:2px solid var(--border);border-radius:var(--radius);cursor:pointer;text-align:center;transition:border .15s,box-shadow .15s}
+.backend-card:hover{border-color:var(--accent);box-shadow:var(--shadow)}
+.backend-card.selected{border-color:var(--accent);background:var(--accent-light)}
+.backend-card svg{width:36px;height:36px;margin-bottom:10px}
+.backend-card h3{font-size:.95rem;margin-bottom:4px}
+.backend-card p{font-size:.78rem;color:var(--muted)}
+
+.textarea-wrap{position:relative}
+.textarea-wrap textarea{width:100%;min-height:140px;padding:14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font-mono);font-size:.82rem;resize:vertical;line-height:1.5}
+.textarea-wrap textarea:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-light)}
+.textarea-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.textarea-label label{font-size:.88rem;font-weight:600;color:var(--ink)}
+.textarea-label button{font-size:.78rem;color:var(--accent);font-weight:500}
+
+.loading-steps{display:flex;flex-direction:column;gap:12px;padding:24px 0}
+.loading-step{display:flex;align-items:center;gap:12px;font-size:.88rem;color:var(--muted)}
+.loading-step.active{color:var(--ink);font-weight:500}
+.loading-step.done{color:var(--ok)}
+.loading-step .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+.loading-step .check svg{width:18px;height:18px;color:var(--ok)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* INTEGRATIONS */
+.integration-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.integration-card{padding:24px}
+.integration-card h3{font-size:1rem;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.integration-card p{font-size:.85rem;color:var(--muted);margin-bottom:12px;line-height:1.5}
+
+/* SETTINGS */
+.settings-section{margin-bottom:24px}
+.settings-section h3{font-size:1rem;margin-bottom:12px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+.toggle-row label{font-size:.88rem}
+.toggle{width:40px;height:22px;background:var(--border);border-radius:11px;position:relative;cursor:pointer;transition:background .2s}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:'';position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:2px;left:2px;transition:left .2s}
+.toggle.on::after{left:20px}
+.danger-zone{border:1px solid var(--critical);border-radius:var(--radius);padding:20px}
+.danger-zone h3{color:var(--critical)}
+.btn-danger{padding:8px 16px;background:var(--critical);color:#fff;border-radius:var(--radius-sm);font-weight:600;font-size:.85rem}
+
+/* PROJECTS TABLE */
+.projects-table{width:100%;border-collapse:collapse}
+.projects-table th{text-align:left;padding:12px 16px;font-size:.78rem;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);border-bottom:1px solid var(--border)}
+.projects-table td{padding:12px 16px;border-bottom:1px solid var(--border);font-size:.88rem}
+.projects-table tr:hover td{background:var(--accent-light)}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:60px 24px}
+.empty-state svg{width:64px;height:64px;color:var(--border);margin-bottom:16px}
+.empty-state h3{font-size:1.1rem;margin-bottom:8px}
+.empty-state p{color:var(--muted);font-size:.88rem;margin-bottom:20px}
+.btn-secondary{padding:10px 20px;border:1px solid var(--accent);color:var(--accent);border-radius:var(--radius-sm);font-weight:600;font-size:.88rem;transition:background .15s}
+.btn-secondary:hover{background:var(--accent-light)}
+
+/* ONBOARDING */
+.onboarding-card{background:linear-gradient(135deg,var(--accent-light) 0%,#fff 100%);border:1px solid var(--accent);border-radius:var(--radius);padding:24px;margin-bottom:24px}
+.onboarding-card h3{color:var(--accent);margin-bottom:12px}
+.onboarding-steps{display:flex;gap:16px;flex-wrap:wrap}
+.onboarding-step{flex:1;min-width:160px;padding:16px;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border)}
+.onboarding-step .step-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;margin-bottom:8px}
+.onboarding-step h4{font-size:.85rem;margin-bottom:4px}
+.onboarding-step p{font-size:.78rem;color:var(--muted)}
+
+/* ACTIVITY */
+.activity-list{list-style:none}
+.activity-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.activity-item:last-child{border-bottom:none}
+.activity-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.activity-text{flex:1;font-size:.85rem}
+.activity-time{font-size:.78rem;color:var(--muted)}
+
+/* POPOVER */
+.popover{position:absolute;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-lg);max-width:320px;z-index:300;display:none;font-size:.84rem;line-height:1.5}
+.popover.show{display:block}
+.popover h4{margin-bottom:8px;font-size:.88rem}
+
+/* REPORT HEADER */
+.report-header{display:flex;align-items:center;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.report-verdict{font-size:1.2rem;font-weight:600;line-height:1.3;margin-bottom:20px;color:var(--ink)}
+
+/* MOBILE MENU */
+.mobile-menu-btn{display:none;padding:8px;margin-right:8px}
+.mobile-menu-btn svg{width:22px;height:22px}
+@media(max-width:768px){.mobile-menu-btn{display:flex}}
+
+/* TOOLTIP */
+.tooltip{position:absolute;background:var(--ink);color:#fff;padding:4px 8px;border-radius:4px;font-size:.72rem;pointer-events:none;white-space:nowrap;z-index:999}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// FUGA SaaS App — Single File Application
+// ═══════════════════════════════════════════════════════════════
+
+const ICONS = {
+  logo: `<svg viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#5B3DF5"/><path d="M8 10h16M8 16h12M8 22h8" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><circle cx="24" cy="22" r="4" fill="#E5322D"/><path d="M22.5 22l1.5 1.5 2-2" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  dashboard: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="7" height="7" rx="2"/><rect x="11" y="2" width="7" height="7" rx="2"/><rect x="2" y="11" width="7" height="7" rx="2"/><rect x="11" y="11" width="7" height="7" rx="2"/></svg>`,
+  projects: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 5a2 2 0 012-2h4l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V5z"/></svg>`,
+  scan: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="6"/><path d="M14 14l4 4"/><path d="M9 6v6M6 9h6"/></svg>`,
+  reports: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2h8l4 4v12a2 2 0 01-2 2H4a2 2 0 01-2-2V4a2 2 0 012-2z"/><path d="M6 10h8M6 14h5"/></svg>`,
+  integrations: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 10h3M13 10h3M10 4v3M10 13v3"/><circle cx="10" cy="10" r="3"/></svg>`,
+  settings: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="3"/><path d="M10 1v2M10 17v2M3.5 3.5l1.4 1.4M15.1 15.1l1.4 1.4M1 10h2M17 10h2M3.5 16.5l1.4-1.4M15.1 4.9l1.4-1.4"/></svg>`,
+  search: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="5"/><path d="M13 13l4 4"/></svg>`,
+  plus: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>`,
+  chevron: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 4l4 4-4 4"/></svg>`,
+  check: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10l4 4 8-8"/></svg>`,
+  alert: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 2L1 18h18L10 2zM10 8v4M10 14v1"/></svg>`,
+  shield: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 2l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V5l7-3z"/></svg>`,
+  leak: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 2v6M7 4l3 4 3-4"/><path d="M4 12c0 3.3 2.7 6 6 6s6-2.7 6-6"/></svg>`,
+  docs: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="2" width="14" height="16" rx="2"/><path d="M7 6h6M7 10h6M7 14h4"/></svg>`,
+  fix: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.5 5.5l-9 9M11 5l4 4"/><path d="M4 16l1-4 9-9 3 3-9 9-4 1z"/></svg>`,
+  menu: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h14M3 10h14M3 15h14"/></svg>`,
+  github: `<svg viewBox="0 0 20 20"><path fill="currentColor" d="M10 1.5a8.5 8.5 0 00-2.69 16.56c.43.08.58-.18.58-.41v-1.44c-2.38.52-2.88-1.15-2.88-1.15a2.27 2.27 0 00-.95-1.25c-.78-.53.06-.52.06-.52a1.8 1.8 0 011.31.88 1.82 1.82 0 002.49.71 1.82 1.82 0 01.54-1.14c-1.9-.22-3.9-.95-3.9-4.24a3.32 3.32 0 01.88-2.3 3.09 3.09 0 01.08-2.27s.72-.23 2.37.88a8.18 8.18 0 014.32 0c1.64-1.11 2.36-.88 2.36-.88a3.09 3.09 0 01.09 2.27 3.32 3.32 0 01.88 2.3c0 3.3-2.01 4.02-3.92 4.23a2.04 2.04 0 01.58 1.58v2.35c0 .23.15.5.59.41A8.5 8.5 0 0010 1.5z"/></svg>`,
+  google: `<svg viewBox="0 0 20 20"><path fill="#4285F4" d="M10 8.2v3.7h5.2c-.2 1.3-1.6 3.7-5.2 3.7-3.1 0-5.7-2.6-5.7-5.7S6.9 4.2 10 4.2c1.8 0 3 .8 3.6 1.4l2.5-2.4C14.5 1.7 12.4.8 10 .8 4.9.8 .8 4.9.8 10s4.1 9.2 9.2 9.2c5.3 0 8.8-3.7 8.8-9 0-.6-.1-1.1-.2-1.5H10z"/></svg>`,
+  copy: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M3 11V3a1.5 1.5 0 011.5-1.5H11"/></svg>`,
+  download: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M5 7l3 3 3-3M3 12v1.5h10V12"/></svg>`,
+  trash: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1M6 7v5M8 7v5M10 7v5"/><path d="M4 4l.5 9a1.5 1.5 0 001.5 1.5h4a1.5 1.5 0 001.5-1.5L12 4"/></svg>`,
+  x: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l8 8M12 4l-8 8"/></svg>`,
+};
+
+// STATE
+let state = {
+  view: 'dashboard',
+  session: JSON.parse(localStorage.getItem('fuga_session') || 'null'),
+  projects: JSON.parse(localStorage.getItem('fuga_projects') || '[]'),
+  wizard: { step: 1, backend: null, name: '', rules: '', code: '' },
+  activeReport: null,
+  loading: false,
+};
+
+function saveProjects() { localStorage.setItem('fuga_projects', JSON.stringify(state.projects)); }
+function saveSession() { localStorage.setItem('fuga_session', JSON.stringify(state.session)); }
+function navigate(view, data) { state.view = view; if (data) Object.assign(state, data); render(); }
+
+function getGrade(score) {
+  if (score <= 9) return 'A';
+  if (score <= 24) return 'B';
+  if (score <= 49) return 'C';
+  if (score <= 74) return 'D';
+  return 'F';
+}
+function getGradeColor(g) {
+  const m = { A: '#0FA968', B: '#0FA968', C: '#EAB308', D: '#F59E0B', F: '#E5322D' };
+  return m[g] || '#64748B';
+}
+function getGradeLabel(g) {
+  const m = { A: 'Protegido', B: 'Bien', C: 'En riesgo', D: 'Vulnerable', F: 'Crítico' };
+  return m[g] || '';
+}
+function getSeverityColor(s) {
+  const m = { critical: '#E5322D', high: '#F59E0B', medium: '#EAB308', low: '#64748B', info: '#64748B' };
+  return m[s] || '#64748B';
+}
+function getBackendColor(b) {
+  const m = { firestore: '#6D3BEB', rtdb: '#0EA5E9', supabase: '#EC4899' };
+  return m[b] || '#6D3BEB';
+}
+function getBackendLabel(b) {
+  const m = { firestore: 'Firestore', rtdb: 'Realtime DB', supabase: 'Supabase' };
+  return m[b] || b;
+}
+function timeAgo(d) {
+  const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+  if (s < 60) return 'Hace un momento';
+  if (s < 3600) return `Hace ${Math.floor(s/60)} min`;
+  if (s < 86400) return `Hace ${Math.floor(s/3600)}h`;
+  return `Hace ${Math.floor(s/86400)}d`;
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+// EXAMPLES
+const EXAMPLES = {
+  firestore: `rules_version = '2';\nservice cloud.firestore {\n  match /databases/{db}/documents {\n    match /pacientes/{id} {\n      allow read: if true;\n    }\n    match /pagos/{id} {\n      allow read, write: if true;\n    }\n  }\n}`,
+  rtdb: `{\n  "rules": {\n    "usuarios": { ".read": true },\n    "pagos": { ".read": true, ".write": true }\n  }\n}`,
+  supabase: `create table pagos (id uuid, user_id uuid, numeroTarjeta text, cvv text);\ncreate table usuarios (id uuid, email text);\nalter table usuarios enable row level security;\ncreate policy public_read on usuarios for select using (true);`
+};
+
+// ═══ SVG CHARTS ═══
+function renderGauge(score, size = 140) {
+  const grade = getGrade(score);
+  const color = getGradeColor(grade);
+  const label = getGradeLabel(grade);
+  const r = 54; const circ = 2 * Math.PI * r;
+  const pct = Math.min(score, 100) / 100;
+  const dashOff = circ * (1 - pct);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 128 128">
+    <circle cx="64" cy="64" r="${r}" fill="none" stroke="#E4E9F2" stroke-width="10"/>
+    <circle cx="64" cy="64" r="${r}" fill="none" stroke="${color}" stroke-width="10" 
+      stroke-dasharray="${circ}" stroke-dashoffset="${dashOff}" 
+      stroke-linecap="round" transform="rotate(-90 64 64)" style="transition:stroke-dashoffset .6s"/>
+    <text x="64" y="56" text-anchor="middle" font-family="Space Grotesk" font-size="26" font-weight="700" fill="${color}">${grade}</text>
+    <text x="64" y="74" text-anchor="middle" font-family="Inter" font-size="10" fill="#5B6675">${score}/100</text>
+    <text x="64" y="92" text-anchor="middle" font-family="Inter" font-size="9" font-weight="600" fill="${color}">${label}</text>
+  </svg>`;
+}
+
+function renderDonut(data, size = 160) {
+  // data: [{label, value, color}]
+  const total = data.reduce((a, d) => a + d.value, 0);
+  if (!total) return `<svg width="${size}" height="${size}" viewBox="0 0 128 128"><circle cx="64" cy="64" r="50" fill="none" stroke="#E4E9F2" stroke-width="14"/><text x="64" y="68" text-anchor="middle" font-family="Inter" font-size="10" fill="#5B6675">Sin datos</text></svg>`;
+  const r = 50; const circ = 2 * Math.PI * r;
+  let offset = 0;
+  const paths = data.map(d => {
+    const pct = d.value / total;
+    const dash = circ * pct;
+    const o = offset; offset += dash;
+    return `<circle cx="64" cy="64" r="${r}" fill="none" stroke="${d.color}" stroke-width="14" stroke-dasharray="${dash} ${circ - dash}" stroke-dashoffset="${-o}" transform="rotate(-90 64 64)"/>`;
+  }).join('');
+  const legend = data.filter(d => d.value > 0).map(d => `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px;font-size:.75rem"><span style="width:8px;height:8px;border-radius:50%;background:${d.color};display:inline-block"></span>${d.label}: ${d.value}</span>`).join('');
+  return `<div style="text-align:center"><svg width="${size}" height="${size}" viewBox="0 0 128 128">${paths}<text x="64" y="68" text-anchor="middle" font-family="Space Grotesk" font-size="20" font-weight="700" fill="#111725">${total}</text></svg><div style="margin-top:8px">${legend}</div></div>`;
+}
+
+function renderLineChart(points, w = 300, h = 120) {
+  if (!points.length) return `<div style="text-align:center;padding:24px;color:var(--muted);font-size:.85rem">Ejecuta más escaneos para ver la tendencia</div>`;
+  const max = Math.max(...points, 10);
+  const step = w / Math.max(points.length - 1, 1);
+  const coords = points.map((p, i) => `${(i * step).toFixed(1)},${(h - (p / max) * (h - 20) - 10).toFixed(1)}`);
+  const polyline = coords.join(' ');
+  const area = `0,${h} ${polyline} ${((points.length - 1) * step).toFixed(1)},${h}`;
+  const grid = [0, 25, 50, 75, 100].filter(v => v <= max).map(v => {
+    const y = (h - (v / max) * (h - 20) - 10).toFixed(1);
+    return `<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="#E4E9F2" stroke-width="0.5"/><text x="-4" y="${y}" text-anchor="end" font-size="8" fill="#5B6675">${v}</text>`;
+  }).join('');
+  return `<svg width="100%" viewBox="-30 0 ${w + 40} ${h + 10}" preserveAspectRatio="xMidYMid meet">
+    ${grid}
+    <polygon points="${area}" fill="url(#areaGrad)" opacity="0.3"/>
+    <polyline points="${polyline}" fill="none" stroke="#5B3DF5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    ${coords.map((c, i) => `<circle cx="${c.split(',')[0]}" cy="${c.split(',')[1]}" r="3" fill="#5B3DF5"/>`).join('')}
+    <defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5B3DF5"/><stop offset="100%" stop-color="#5B3DF5" stop-opacity="0"/></linearGradient></defs>
+  </svg>`;
+}
+
+function renderBars(data, w = 280, h = 120) {
+  // data: [{label, value, color}]
+  if (!data.length || data.every(d => !d.value)) return `<div style="text-align:center;padding:24px;color:var(--muted);font-size:.85rem">Sin datos de backends</div>`;
+  const max = Math.max(...data.map(d => d.value), 1);
+  const barW = Math.min(50, (w - 20) / data.length - 10);
+  const bars = data.map((d, i) => {
+    const bh = (d.value / max) * (h - 30);
+    const x = 10 + i * ((w - 20) / data.length) + ((w - 20) / data.length - barW) / 2;
+    return `<rect x="${x}" y="${h - 20 - bh}" width="${barW}" height="${bh}" rx="4" fill="${d.color}"/>
+      <text x="${x + barW / 2}" y="${h - 6}" text-anchor="middle" font-size="8" fill="#5B6675">${d.label}</text>
+      <text x="${x + barW / 2}" y="${h - 24 - bh}" text-anchor="middle" font-size="9" font-weight="600" fill="${d.color}">${d.value}</text>`;
+  }).join('');
+  return `<svg width="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">${bars}</svg>`;
+}
+
+// ═══ COPY UTIL ═══
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '¡Copiado!';
+    setTimeout(() => btn.textContent = orig, 1500);
+  });
+}
+
+// ═══ LOGIN VIEW ═══
+function renderLogin() {
+  return `<div class="login-page">
+    <div class="login-card">
+      <div class="login-logo">${ICONS.logo}<span>FUGA</span></div>
+      <p class="login-title">Entra a tu consola de seguridad</p>
+      <form id="login-form">
+        <div class="login-field"><label for="login-email">Email</label><input type="email" id="login-email" placeholder="tu@email.com" required></div>
+        <div class="login-field"><label for="login-pass">Contraseña</label><input type="password" id="login-pass" placeholder="••••••••" required></div>
+        <button type="submit" class="btn-primary">Iniciar sesión</button>
+      </form>
+      <div class="login-divider">o continúa con</div>
+      <button class="btn-social" id="btn-github">${ICONS.github} Continuar con GitHub</button>
+      <button class="btn-social" id="btn-google">${ICONS.google} Continuar con Google</button>
+      <a href="#" class="login-demo" id="btn-demo">Entrar en modo demo</a>
+    </div>
+  </div>`;
+}
+
+function bindLogin() {
+  const form = document.getElementById('login-form');
+  const doLogin = (email, name) => {
+    state.session = { email, name };
+    saveSession();
+    render();
+  };
+  if (form) form.onsubmit = e => { e.preventDefault(); const em = document.getElementById('login-email').value; doLogin(em, em.split('@')[0]); };
+  const gh = document.getElementById('btn-github');
+  if (gh) gh.onclick = () => doLogin('dev@github.com', 'Dev GitHub');
+  const go = document.getElementById('btn-google');
+  if (go) go.onclick = () => doLogin('dev@gmail.com', 'Dev Google');
+  const demo = document.getElementById('btn-demo');
+  if (demo) demo.onclick = e => { e.preventDefault(); doLogin('demo@fuga.dev', 'Usuario Demo'); };
+}
+
+// ═══ APP SHELL ═══
+function renderShell(content) {
+  const s = state.session || {};
+  const initials = (s.name || 'U').slice(0, 2).toUpperCase();
+  const navItems = [
+    { id: 'dashboard', icon: ICONS.dashboard, label: 'Dashboard' },
+    { id: 'projects', icon: ICONS.projects, label: 'Proyectos' },
+    { id: 'new-scan', icon: ICONS.scan, label: 'Nuevo escaneo' },
+    { id: 'integrations', icon: ICONS.integrations, label: 'Integraciones' },
+    { id: 'settings', icon: ICONS.settings, label: 'Configuración' },
+  ];
+  const sidebar = navItems.map(n => `<div class="sidebar-item${state.view === n.id ? ' active' : ''}" data-nav="${n.id}">${n.icon}<span>${n.label}</span></div>`).join('');
+  return `<div class="app-shell">
+    <header class="topbar">
+      <button class="mobile-menu-btn" id="mobile-toggle" aria-label="Menú">${ICONS.menu}</button>
+      <div class="topbar-logo">${ICONS.logo}<span>FUGA</span></div>
+      <div class="topbar-search">${ICONS.search}<input type="text" placeholder="Buscar proyectos, escaneos…" aria-label="Buscar"></div>
+      <div class="topbar-actions">
+        <button class="btn-new-scan" data-nav="new-scan">${ICONS.plus} Nuevo escaneo</button>
+        <div class="user-menu">
+          <div class="user-avatar" id="user-avatar-btn" title="${s.name}">${initials}</div>
+          <div class="user-dropdown" id="user-dropdown">
+            <div class="user-dropdown-name">${s.name || 'Usuario'}<br><span style="font-weight:400;font-size:.75rem;color:var(--muted)">${s.email || ''}</span></div>
+            <button class="user-dropdown-item" data-nav="settings">Configuración</button>
+            <button class="user-dropdown-item" id="btn-logout">Cerrar sesión</button>
+          </div>
+        </div>
+      </div>
+    </header>
+    <aside class="sidebar" id="sidebar">${sidebar}</aside>
+    <main class="main-content">${content}</main>
+  </div>`;
+}
+
+function bindShell() {
+  document.querySelectorAll('[data-nav]').forEach(el => {
+    el.onclick = () => { navigate(el.dataset.nav); };
+  });
+  const avatarBtn = document.getElementById('user-avatar-btn');
+  const dd = document.getElementById('user-dropdown');
+  if (avatarBtn) avatarBtn.onclick = () => dd.classList.toggle('show');
+  document.addEventListener('click', e => { if (dd && !dd.parentElement.contains(e.target)) dd.classList.remove('show'); });
+  const logout = document.getElementById('btn-logout');
+  if (logout) logout.onclick = () => { state.session = null; localStorage.removeItem('fuga_session'); render(); };
+  const mobileBtn = document.getElementById('mobile-toggle');
+  const sidebar = document.getElementById('sidebar');
+  if (mobileBtn) mobileBtn.onclick = () => sidebar.classList.toggle('open');
+}
+
+// ═══ DASHBOARD ═══
+function renderDashboard() {
+  const projects = state.projects;
+  const allScans = projects.flatMap(p => (p.scans || []).map(s => ({ ...s, project: p.name, backend: p.backend })));
+  const latestScans = allScans.sort((a, b) => new Date(b.at) - new Date(a.at));
+  const totalLeaks = latestScans.reduce((a, s) => a + (s.exploit?.leaks?.length || 0), 0);
+  const totalExposed = latestScans.reduce((a, s) => a + (s.exploit?.totalDocsExposed || 0), 0);
+  const fixedCount = latestScans.filter(s => s.verify?.clean).length;
+  
+  // Average risk for gauge
+  const lastRisks = projects.map(p => p.scans?.length ? p.scans[p.scans.length - 1].risk : null).filter(r => r !== null);
+  const avgRisk = lastRisks.length ? Math.round(lastRisks.reduce((a, b) => a + b, 0) / lastRisks.length) : 0;
+  
+  // Severity donut
+  const sevCounts = { critical: 0, high: 0, medium: 0, low: 0 };
+  latestScans.forEach(s => { if (s.scan?.summary) { sevCounts.critical += s.scan.summary.critical || 0; sevCounts.high += s.scan.summary.high || 0; sevCounts.medium += s.scan.summary.medium || 0; sevCounts.low += s.scan.summary.low || 0; } });
+  const donutData = [
+    { label: 'Crítico', value: sevCounts.critical, color: '#E5322D' },
+    { label: 'Alto', value: sevCounts.high, color: '#F59E0B' },
+    { label: 'Medio', value: sevCounts.medium, color: '#EAB308' },
+    { label: 'Bajo', value: sevCounts.low, color: '#64748B' },
+  ];
+  
+  // Line chart: risk over time
+  const riskHistory = latestScans.slice(0, 10).reverse().map(s => s.risk || 0);
+  
+  // Bars: by backend
+  const backendCounts = { firestore: 0, rtdb: 0, supabase: 0 };
+  latestScans.forEach(s => { if (s.backend && backendCounts[s.backend] !== undefined) backendCounts[s.backend]++; });
+  const barsData = [
+    { label: 'Firestore', value: backendCounts.firestore, color: '#6D3BEB' },
+    { label: 'Realtime DB', value: backendCounts.rtdb, color: '#0EA5E9' },
+    { label: 'Supabase', value: backendCounts.supabase, color: '#EC4899' },
+  ];
+
+  const hasData = projects.length > 0;
+  
+  if (!hasData) {
+    return `<div>
+      <h2 style="margin-bottom:24px">Dashboard</h2>
+      <div class="onboarding-card">
+        <h3>¿Primera vez? 3 pasos para asegurar tu app</h3>
+        <div class="onboarding-steps">
+          <div class="onboarding-step"><div class="step-num">1</div><h4>Conecta tu proyecto</h4><p>Elige el backend que usas</p></div>
+          <div class="onboarding-step"><div class="step-num">2</div><h4>Ejecuta un escaneo</h4><p>Pega tus reglas de seguridad</p></div>
+          <div class="onboarding-step"><div class="step-num">3</div><h4>Aplica el fix</h4><p>Copia las reglas reparadas</p></div>
+        </div>
+        <button class="btn-primary" style="margin-top:16px;width:auto;padding:10px 24px" data-nav="new-scan">Crear tu primer escaneo</button>
+      </div>
+      <div class="empty-state">
+        ${ICONS.shield}
+        <h3>Aún no hay datos</h3>
+        <p>Ejecuta tu primer escaneo para ver métricas de seguridad aquí.</p>
+        <button class="btn-secondary" data-nav="new-scan">Nuevo escaneo</button>
+      </div>
+    </div>`;
+  }
+
+  // Verdict
+  let verdict = 'Todo protegido. ¡Buen trabajo!';
+  if (avgRisk > 74) verdict = 'Tu base de datos está expuesta ahora mismo. Necesitas actuar ya.';
+  else if (avgRisk > 49) verdict = 'Tienes vulnerabilidades serias que podrían exponer datos.';
+  else if (avgRisk > 24) verdict = 'Hay algunos riesgos que deberías revisar pronto.';
+  else if (avgRisk > 9) verdict = 'Tu seguridad es decente, pero hay margen de mejora.';
+
+  return `<div>
+    <h2 style="margin-bottom:24px">Dashboard</h2>
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:24px;margin-bottom:24px;align-items:start">
+      <div class="card" style="text-align:center;padding:28px 32px">
+        <div class="card-title">Security Score</div>
+        ${renderGauge(avgRisk)}
+        <p style="font-size:.85rem;color:var(--muted);margin-top:8px;max-width:180px">${verdict}</p>
+      </div>
+      <div class="kpi-row">
+        <div class="card kpi-card">
+          <div class="kpi-icon" style="background:var(--accent-light)">${ICONS.projects}</div>
+          <div><div class="kpi-value">${projects.length}</div><div class="kpi-label">Proyectos monitoreados</div></div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-icon" style="background:#FEE2E2">${ICONS.leak}</div>
+          <div><div class="kpi-value" style="color:var(--critical)">${totalLeaks}</div><div class="kpi-label">Fugas activas</div>${totalLeaks > 0 ? '<div class="kpi-trend up">Requiere atención</div>' : ''}</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-icon" style="background:#FEF3C7">${ICONS.docs}</div>
+          <div><div class="kpi-value">${totalExposed}</div><div class="kpi-label">Registros expuestos</div></div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-icon" style="background:#D1FAE5">${ICONS.fix}</div>
+          <div><div class="kpi-value" style="color:var(--ok)">${fixedCount}</div><div class="kpi-label">Fugas corregidas</div>${fixedCount > 0 ? '<div class="kpi-trend down">Verificadas</div>' : ''}</div>
+        </div>
+      </div>
+    </div>
+    <div class="charts-row">
+      <div class="card"><div class="card-title">Severidad de hallazgos</div>${renderDonut(donutData)}</div>
+      <div class="card"><div class="card-title">Riesgo en el tiempo</div>${renderLineChart(riskHistory)}</div>
+      <div class="card"><div class="card-title">Escaneos por backend</div>${renderBars(barsData)}</div>
+    </div>
+    ${latestScans.length ? `<div class="card"><div class="card-title">Actividad reciente</div><ul class="activity-list">${latestScans.slice(0, 5).map(s => `<li class="activity-item"><span class="activity-dot" style="background:${getBackendColor(s.backend)}"></span><span class="activity-text"><strong>${s.project}</strong> — ${getBackendLabel(s.backend)} — Grado ${getGrade(s.risk)}</span><span class="activity-time">${timeAgo(s.at)}</span></li>`).join('')}</ul></div>` : ''}
+  </div>`;
+}
+
+// ═══ NEW SCAN WIZARD ═══
+function renderNewScan() {
+  const w = state.wizard;
+  const stepsInfo = [{ n: 1, l: 'Backend' }, { n: 2, l: 'Reglas' }, { n: 3, l: 'Escanear' }];
+  const stepsHtml = stepsInfo.map((s, i) => {
+    const cls = w.step === s.n ? 'active' : (w.step > s.n ? 'done' : '');
+    return `<div class="wizard-step ${cls}"><div class="wizard-step-num">${w.step > s.n ? '✓' : s.n}</div><span class="wizard-step-label">${s.l}</span></div>${i < 2 ? '<div class="wizard-connector"></div>' : ''}`;
+  }).join('');
+
+  let body = '';
+  if (w.step === 1) {
+    body = `<h3 style="margin-bottom:16px">¿Qué backend usas?</h3>
+    <div class="backend-cards">
+      <div class="backend-card${w.backend === 'firestore' ? ' selected' : ''}" data-backend="firestore">
+        <svg viewBox="0 0 36 36" width="36" height="36"><rect width="36" height="36" rx="8" fill="#6D3BEB" opacity=".12"/><path d="M10 26l4-18 4 10 4-6 4 14" stroke="#6D3BEB" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h3>Cloud Firestore</h3><p>Firebase / Google Cloud</p>
+      </div>
+      <div class="backend-card${w.backend === 'rtdb' ? ' selected' : ''}" data-backend="rtdb">
+        <svg viewBox="0 0 36 36" width="36" height="36"><rect width="36" height="36" rx="8" fill="#0EA5E9" opacity=".12"/><path d="M10 18l8-12 8 12-8 12z" stroke="#0EA5E9" stroke-width="2.5" fill="none" stroke-linejoin="round"/></svg>
+        <h3>Realtime Database</h3><p>Firebase / Google Cloud</p>
+      </div>
+      <div class="backend-card${w.backend === 'supabase' ? ' selected' : ''}" data-backend="supabase">
+        <svg viewBox="0 0 36 36" width="36" height="36"><rect width="36" height="36" rx="8" fill="#EC4899" opacity=".12"/><circle cx="18" cy="18" r="8" stroke="#EC4899" stroke-width="2.5" fill="none"/><path d="M18 10v16M10 18h16" stroke="#EC4899" stroke-width="1.5"/></svg>
+        <h3>Supabase</h3><p>Row Level Security (RLS)</p>
+      </div>
+    </div>
+    <button class="btn-primary" style="margin-top:24px;width:auto;padding:10px 24px" id="wizard-next-1" ${!w.backend ? 'disabled style="opacity:.5;margin-top:24px;width:auto;padding:10px 24px"' : ''}>Siguiente</button>`;
+  } else if (w.step === 2) {
+    body = `<h3 style="margin-bottom:4px">Configura el escaneo</h3>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:20px">Pega las reglas de seguridad de tu proyecto. Si no sabes dónde encontrarlas, usa el botón de ayuda.</p>
+    <div class="login-field"><label>Nombre del proyecto</label><input type="text" id="scan-name" placeholder="Mi app de pagos" value="${w.name}"></div>
+    <div class="textarea-wrap">
+      <div class="textarea-label"><label>Reglas de seguridad</label><div><button class="btn-secondary" style="padding:4px 10px;font-size:.75rem;margin-right:8px" id="btn-help-rules">¿Dónde encuentro mis reglas?</button><button class="btn-secondary" style="padding:4px 10px;font-size:.75rem" id="btn-example">Usar ejemplo vulnerable</button></div></div>
+      <textarea id="scan-rules" placeholder="Pega aquí tus reglas de Firestore, RTDB o Supabase…">${w.rules}</textarea>
+    </div>
+    <div class="textarea-wrap" style="margin-top:16px">
+      <div class="textarea-label"><label>Código cliente (opcional)</label></div>
+      <textarea id="scan-code" placeholder="Pega fragmentos de tu código que acceden a la base de datos (opcional, mejora el análisis)…" style="min-height:80px">${w.code}</textarea>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:20px">
+      <button class="btn-secondary" id="wizard-back-2">Atrás</button>
+      <button class="btn-primary" style="width:auto;padding:10px 24px" id="wizard-next-2">Siguiente</button>
+    </div>
+    <div class="popover" id="help-popover" style="top:120px;right:20px">
+      <h4>¿Dónde encuentro mis reglas?</h4>
+      <p><strong>Firestore:</strong> Firebase Console → Firestore → Reglas, o el archivo <code>firestore.rules</code> en tu proyecto.</p>
+      <p style="margin-top:8px"><strong>Realtime DB:</strong> Firebase Console → Realtime Database → Reglas (JSON).</p>
+      <p style="margin-top:8px"><strong>Supabase:</strong> Dashboard → SQL Editor, revisa las políticas RLS con <code>\\d tablename</code>.</p>
+      <button style="margin-top:12px;font-size:.82rem;color:var(--accent)" id="close-help">Cerrar</button>
+    </div>`;
+  } else if (w.step === 3) {
+    if (state.loading) {
+      body = `<div style="text-align:center;padding:40px 0">
+        <h3 style="margin-bottom:24px">Analizando tu proyecto…</h3>
+        <div class="loading-steps" id="loading-steps">
+          <div class="loading-step active"><div class="spinner"></div><span>Analizando reglas de acceso…</span></div>
+          <div class="loading-step"><div class="spinner" style="opacity:0"></div><span>Lanzando ataque anónimo…</span></div>
+          <div class="loading-step"><div class="spinner" style="opacity:0"></div><span>Generando fix de mínimo privilegio…</span></div>
+          <div class="loading-step"><div class="spinner" style="opacity:0"></div><span>Verificando que la fuga desapareció…</span></div>
+        </div>
+      </div>`;
+    } else {
+      body = `<div style="text-align:center;padding:40px 0">
+        <h3 style="margin-bottom:8px">Todo listo para escanear</h3>
+        <p style="color:var(--muted);margin-bottom:24px">FUGA ejecutará un ataque anónimo contra tus reglas para verificar si hay datos expuestos.</p>
+        <button class="btn-primary" style="width:auto;padding:14px 32px;font-size:1rem" id="btn-scan-now">Escanear ahora</button>
+        <button class="btn-secondary" style="margin-left:12px" id="wizard-back-3">Atrás</button>
+      </div>`;
+    }
+  }
+
+  return `<div>
+    <h2 style="margin-bottom:24px">Nuevo escaneo</h2>
+    <div class="card">
+      <div class="wizard-steps">${stepsHtml}</div>
+      ${body}
+    </div>
+  </div>`;
+}
+
+function bindNewScan() {
+  // Step 1
+  document.querySelectorAll('[data-backend]').forEach(el => {
+    el.onclick = () => { state.wizard.backend = el.dataset.backend; render(); };
+  });
+  const next1 = document.getElementById('wizard-next-1');
+  if (next1) next1.onclick = () => { if (state.wizard.backend) { state.wizard.step = 2; render(); } };
+  // Step 2
+  const back2 = document.getElementById('wizard-back-2');
+  if (back2) back2.onclick = () => { state.wizard.step = 1; render(); };
+  const next2 = document.getElementById('wizard-next-2');
+  if (next2) next2.onclick = () => {
+    state.wizard.name = document.getElementById('scan-name').value || 'Proyecto sin nombre';
+    state.wizard.rules = document.getElementById('scan-rules').value;
+    state.wizard.code = document.getElementById('scan-code').value;
+    if (!state.wizard.rules.trim()) { alert('Pega tus reglas de seguridad para continuar.'); return; }
+    state.wizard.step = 3; render();
+  };
+  const btnExample = document.getElementById('btn-example');
+  if (btnExample) btnExample.onclick = () => {
+    const ta = document.getElementById('scan-rules');
+    if (ta) { ta.value = EXAMPLES[state.wizard.backend] || EXAMPLES.firestore; state.wizard.rules = ta.value; }
+  };
+  const btnHelp = document.getElementById('btn-help-rules');
+  const helpPop = document.getElementById('help-popover');
+  if (btnHelp && helpPop) btnHelp.onclick = () => helpPop.classList.toggle('show');
+  const closeHelp = document.getElementById('close-help');
+  if (closeHelp) closeHelp.onclick = () => helpPop.classList.remove('show');
+  // Step 3
+  const back3 = document.getElementById('wizard-back-3');
+  if (back3) back3.onclick = () => { state.wizard.step = 2; render(); };
+  const btnScan = document.getElementById('btn-scan-now');
+  if (btnScan) btnScan.onclick = () => startScan();
+}
+
+async function startScan() {
+  state.loading = true;
+  render();
+  // Animate loading steps
+  const steps = document.querySelectorAll('#loading-steps .loading-step');
+  for (let i = 0; i < steps.length; i++) {
+    await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
+    if (steps[i - 1]) { steps[i - 1].classList.remove('active'); steps[i - 1].classList.add('done'); steps[i - 1].querySelector('.spinner').style.display = 'none'; steps[i - 1].innerHTML = `<span style="color:var(--ok)">${ICONS.check}</span><span>${steps[i - 1].querySelector('span:last-child').textContent}</span>`; }
+    steps[i].classList.add('active');
+    steps[i].querySelector('.spinner').style.opacity = '1';
+  }
+  // Call API
+  try {
+    const resp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rules: state.wizard.rules, code: state.wizard.code || undefined, backend: state.wizard.backend })
+    });
+    if (!resp.ok) throw new Error('API error ' + resp.status);
+    const data = await resp.json();
+    // Save project
+    const project = state.projects.find(p => p.name === state.wizard.name && p.backend === (data.backend || state.wizard.backend));
+    const scanEntry = { at: new Date().toISOString(), risk: data.scan?.riskScore || 0, grade: getGrade(data.scan?.riskScore || 0), backend: data.backend || state.wizard.backend, scan: data.scan, exploit: data.exploit, fix: data.fix, verify: data.verify };
+    if (project) {
+      project.scans.push(scanEntry);
+    } else {
+      state.projects.push({ id: uid(), name: state.wizard.name, backend: data.backend || state.wizard.backend, rules: state.wizard.rules, code: state.wizard.code, createdAt: new Date().toISOString(), scans: [scanEntry] });
+    }
+    saveProjects();
+    state.activeReport = { project: state.wizard.name, scan: scanEntry, backend: data.backend || state.wizard.backend };
+    state.wizard = { step: 1, backend: null, name: '', rules: '', code: '' };
+    state.loading = false;
+    navigate('report');
+  } catch (err) {
+    // Mark last step done and show error
+    if (steps[steps.length - 1]) { steps[steps.length - 1].classList.remove('active'); steps[steps.length - 1].classList.add('done'); }
+    state.loading = false;
+    alert('Error al conectar con la API: ' + err.message + '\nAsegúrate de que el servidor esté corriendo.');
+    render();
+  }
+}
+</script>
+</body>
+</html>
+</body>
+</html>
