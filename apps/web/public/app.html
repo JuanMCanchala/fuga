@@ -599,7 +599,7 @@ function renderNewScan() {
   const stepsInfo = [{ n: 1, l: 'Backend' }, { n: 2, l: 'Reglas' }, { n: 3, l: 'Escanear' }];
   const stepsHtml = stepsInfo.map((s, i) => {
     const cls = w.step === s.n ? 'active' : (w.step > s.n ? 'done' : '');
-    return `<div class="wizard-step ${cls}"><div class="wizard-step-num">${w.step > s.n ? '✓' : s.n}</div><span class="wizard-step-label">${s.l}</span></div>${i < 2 ? '<div class="wizard-connector"></div>' : ''}`;
+    return `<div class="wizard-step ${cls}"><div class="wizard-step-num">${w.step > s.n ? ICONS.check : s.n}</div><span class="wizard-step-label">${s.l}</span></div>${i < 2 ? '<div class="wizard-connector"></div>' : ''}`;
   }).join('');
 
   let body = '';
@@ -749,8 +749,120 @@ async function startScan() {
     render();
   }
 }
+
+// ═══ HELPERS AÑADIDOS ═══
+function escapeHtml(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function sevLabel(s){return {critical:'Crítico',high:'Alto',medium:'Medio',low:'Bajo',info:'Info'}[s]||s;}
+function backendClass(b){return b==='rtdb'?'badge-rtdb':b==='supabase'?'badge-supabase':'badge-firestore';}
+function backendLabel(b){return b==='rtdb'?'Realtime DB':b==='supabase'?'Supabase':'Firestore';}
+
+// ═══ DISPATCHER + BOOT (faltaban) ═══
+function render(){
+  const app=document.getElementById('app');
+  if(!app)return;
+  if(!state.session){ app.innerHTML=renderLogin(); bindLogin(); return; }
+  state.view=state.view||'dashboard';
+  let content='';
+  switch(state.view){
+    case 'projects': content=renderProjects(); break;
+    case 'new-scan': content=renderNewScan(); break;
+    case 'report': content=renderReport(); break;
+    case 'integrations': content=renderIntegrations(); break;
+    case 'settings': content=renderSettings(); break;
+    default: content=renderDashboard();
+  }
+  app.innerHTML=renderShell(content);
+  bindShell();
+  if(state.view==='new-scan') bindNewScan();
+  else if(state.view==='report') bindReport();
+  else if(state.view==='projects') bindProjects();
+  else if(state.view==='integrations') bindIntegrations();
+  else if(state.view==='settings') bindSettings();
+}
+
+// ═══ REPORTE (visualizado, no JSON) ═══
+function renderReport(){
+  const ar=state.activeReport;
+  if(!ar||!ar.scan) return '<div class="empty-state">'+ICONS.shield+'<p>No hay ningún reporte todavía.</p><button class="btn-primary" data-nav="new-scan">Crear un escaneo</button></div>';
+  const e=ar.scan, sc=e.scan||{}, ex=e.exploit||{}, fx=e.fix||{}, vf=e.verify||{};
+  const risk=sc.riskScore||0, grade=getGrade(risk), sev=sc.summary||{};
+  const verdict = risk>=75 ? 'Cualquiera en internet puede acceder a los datos de tus usuarios ahora mismo.'
+    : risk>=25 ? 'Hay reglas que exponen datos a usuarios no autorizados.'
+    : 'Tus reglas se ven razonablemente seguras.';
+  const chips=['critical','high','medium','low'].filter(k=>sev[k]).map(k=>'<span class="badge badge-'+k+'">'+sev[k]+' '+sevLabel(k).toLowerCase()+'s</span>').join(' ');
+  const findings=(sc.findings||[]).map(f=>`<div class="finding-card"><div class="finding-header"><span class="badge badge-${f.severity}">${sevLabel(f.severity)}</span><span class="finding-title">${escapeHtml(f.title)}</span><span style="margin-left:auto;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.78rem">${escapeHtml(f.matchPath||'')}</span></div><div class="finding-body"><div class="finding-section"><strong>Qué significa</strong><p>${escapeHtml(f.rationale||'')}</p></div><div class="finding-section"><strong>Cómo arreglarlo</strong><p>${escapeHtml(f.recommendation||'')}</p></div>${f.piiFields&&f.piiFields.length?'<div class="finding-section"><strong>Datos sensibles en riesgo:</strong> '+f.piiFields.map(p=>'<span class="badge badge-critical" style="font-size:.62rem">'+escapeHtml(p)+'</span>').join(' ')+'</div>':''}</div></div>`).join('');
+  const readLeaks=(ex.leaks||[]).filter(l=>l.method==='read'&&l.exfiltrated&&l.exfiltrated.length);
+  const evidence = readLeaks.length ? readLeaks.map(l=>{
+    const rec=l.exfiltrated[0]||{};
+    const rows=Object.entries(rec).map(([k,v])=>{const pii=(l.piiFields||[]).includes(k);return '<tr><td>'+escapeHtml(k)+'</td><td style="font-family:\'JetBrains Mono\',monospace;'+(pii?'color:var(--danger);font-weight:600':'')+'">'+escapeHtml(String(v))+(pii?' <span class="badge badge-critical" style="font-size:.58rem">PII</span>':'')+'</td></tr>';}).join('');
+    return '<div class="card"><div class="card-title">'+ICONS.leak+' Lectura anónima de <code>'+escapeHtml(l.path)+'</code></div><table class="data-table"><tbody>'+rows+'</tbody></table></div>';
+  }).join('') : '<p style="color:var(--muted)">No se exfiltraron documentos en este escaneo.</p>';
+  return `<div class="report-view">
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+      <div><h2 style="margin:0 0 6px">${escapeHtml(ar.project||'Escaneo')}</h2><span class="badge ${backendClass(ar.backend)}">${backendLabel(ar.backend)}</span> <span style="color:var(--muted)">${timeAgo(e.at)}</span></div>
+      <div style="text-align:center">${renderGauge(risk,120)}<div style="font-weight:700;margin-top:4px">Grado ${grade}</div></div>
+    </div>
+    <div class="card" style="border-left:4px solid ${risk>=75?'var(--danger)':risk>=25?'var(--medium,#EAB308)':'var(--ok)'}"><h3 style="margin:0 0 6px">Veredicto</h3><p style="font-size:1.05rem;margin:0">${verdict}</p><div style="margin-top:12px">${chips}</div></div>
+    <h3 style="margin:24px 0 8px">Hallazgos</h3>${findings||'<p style="color:var(--muted)">Sin hallazgos.</p>'}
+    <h3 style="margin:24px 0 8px">Datos que un atacante puede robar</h3><p style="color:var(--muted);margin:0 0 12px">${ex.leaks?ex.leaks.filter(l=>l.proven).length:0} fugas · ${ex.totalDocsExposed||0} documentos exfiltrables</p>${evidence}
+    <h3 style="margin:24px 0 8px">Tu fix</h3>
+    <div class="card"><div class="card-title">${ICONS.fix} Reglas endurecidas${fx.source?' ('+escapeHtml(fx.source)+')':''}</div><pre class="code-block" id="fix-code">${escapeHtml(fx.rules||'')}</pre><button class="btn-copy" id="copy-fix">${ICONS.copy} Copiar todo</button></div>
+    ${vf.clean?'<div class="card" style="border-color:var(--ok);background:#F0FBF6"><strong style="color:var(--ok)">'+ICONS.check+' Verificado: aplicando este fix, el atacante anónimo queda bloqueado.</strong></div>':'<div class="card" style="border-color:var(--danger)"><strong style="color:var(--danger)">'+ICONS.alert+' Aún quedan '+(vf.remaining||0)+' fugas.</strong></div>'}
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap"><button class="btn-secondary" id="dl-report">${ICONS.download} Descargar reporte</button><button class="btn-secondary" id="toggle-json">Ver datos técnicos</button></div>
+    <pre class="code-block" id="raw-json" style="display:none;margin-top:12px">${escapeHtml(JSON.stringify(e,null,2))}</pre>
+  </div>`;
+}
+function bindReport(){
+  const c=document.getElementById('copy-fix'); if(c) c.onclick=()=>{const el=document.getElementById('fix-code'); if(el){copyText(el.textContent); c.innerHTML=ICONS.check+' Copiado'; setTimeout(()=>c.innerHTML=ICONS.copy+' Copiar todo',1500);} };
+  const t=document.getElementById('toggle-json'); if(t) t.onclick=()=>{const el=document.getElementById('raw-json'); if(el) el.style.display=el.style.display==='none'?'block':'none';};
+  const d=document.getElementById('dl-report'); if(d) d.onclick=downloadReport;
+}
+function downloadReport(){
+  const ar=state.activeReport; if(!ar)return; const e=ar.scan;
+  const md='# Reporte de seguridad FUGA — '+(ar.project||'')+'\n\n- Backend: '+backendLabel(ar.backend)+'\n- Riesgo: '+(e.scan?.riskScore||0)+'/100 (Grado '+getGrade(e.scan?.riskScore||0)+')\n- Fugas: '+(e.exploit?.leaks?(e.exploit.leaks.filter(l=>l.proven).length):0)+' · Documentos exfiltrables: '+(e.exploit?.totalDocsExposed||0)+'\n- Verificado: '+(e.verify?.clean?'sí':'no')+'\n\n## Hallazgos\n'+(e.scan?.findings||[]).map(f=>'- ['+f.severity+'] '+f.code+' — '+f.title+' ('+f.matchPath+')').join('\n')+'\n\n## Fix\n```\n'+(e.fix?.rules||'')+'\n```\n';
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([md],{type:'text/markdown'})); a.download='fuga-'+(ar.project||'reporte')+'.md'; a.click();
+}
+
+// ═══ PROYECTOS ═══
+function renderProjects(){
+  const ps=state.projects||[];
+  if(!ps.length) return '<div class="empty-state">'+ICONS.projects+'<p>Aún no tienes proyectos.</p><button class="btn-primary" data-nav="new-scan">Nuevo escaneo</button></div>';
+  const rows=ps.map(p=>{const last=p.scans&&p.scans[p.scans.length-1]; const risk=last?last.risk:0, g=getGrade(risk);
+    return `<tr><td><strong>${escapeHtml(p.name)}</strong></td><td><span class="badge ${backendClass(p.backend)}">${backendLabel(p.backend)}</span></td><td><span style="color:${getGradeColor(g)};font-weight:700">${g} · ${risk}</span></td><td>${last&&last.exploit?(last.exploit.leaks?last.exploit.leaks.filter(l=>l.proven).length:0):0}</td><td style="color:var(--muted)">${last?timeAgo(last.at):'—'}</td><td style="text-align:right"><button class="btn-secondary" data-report="${escapeHtml(p.name)}">Ver reporte</button> <button class="btn-danger" data-del="${escapeHtml(p.id)}" title="Eliminar">${ICONS.trash}</button></td></tr>`;
+  }).join('');
+  return `<div class="card"><div class="card-title">Proyectos monitoreados</div><table class="projects-table"><thead><tr><th>Proyecto</th><th>Backend</th><th>Grado</th><th>Fugas</th><th>Último escaneo</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function bindProjects(){
+  document.querySelectorAll('[data-report]').forEach(b=>b.onclick=()=>{const p=state.projects.find(x=>x.name===b.dataset.report); if(p&&p.scans&&p.scans.length){state.activeReport={project:p.name,scan:p.scans[p.scans.length-1],backend:p.backend}; navigate('report');}});
+  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{state.projects=state.projects.filter(x=>x.id!==b.dataset.del); saveProjects(); render();});
+}
+
+// ═══ INTEGRACIONES ═══
+function renderIntegrations(){
+  const mcp='{\n  "mcpServers": {\n    "fuga": { "command": "npx", "args": ["-y", "@fuga/mcp"] }\n  }\n}';
+  const card=(name,desc,id)=>`<div class="integration-card"><div class="card-title">${name}</div><p style="color:var(--muted);margin:.3rem 0 .6rem">${desc}</p><pre class="code-block" id="${id}">${escapeHtml(mcp)}</pre><button class="btn-copy" data-copy="${id}">${ICONS.copy} Copiar</button></div>`;
+  return `<div class="card"><div class="card-title">${ICONS.integrations} Conecta FUGA a tu editor de IA</div><p style="color:var(--muted)">Añade FUGA como servidor MCP y tu agente revisa la seguridad de tus reglas mientras programas.</p><div class="integration-cards">${card('Cursor','Config MCP de Cursor.','mcp-cursor')}${card('Kiro','En .kiro/settings/mcp.json.','mcp-kiro')}${card('Claude Desktop','En claude_desktop_config.json.','mcp-claude')}</div></div>
+  <div class="card"><div class="card-title">${ICONS.docs} Línea de comandos</div><p style="color:var(--muted)">Escanea y arregla desde tu terminal, sin instalar nada.</p><pre class="code-block" id="cli">npx fuga scan\nnpx fuga fix</pre><button class="btn-copy" data-copy="cli">${ICONS.copy} Copiar</button></div>
+  <div class="card"><div class="card-title">${ICONS.check} Escaneo automático al guardar</div><p style="color:var(--muted)">Con el hook de Kiro, FUGA revisa tus reglas cada vez que guardas un archivo <code>.rules</code>. Cero esfuerzo.</p></div>`;
+}
+function bindIntegrations(){ document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>{const el=document.getElementById(b.dataset.copy); if(el){copyText(el.textContent); b.innerHTML=ICONS.check+' Copiado'; setTimeout(()=>b.innerHTML=ICONS.copy+' Copiar',1500);} }); }
+
+// ═══ CONFIGURACIÓN ═══
+function renderSettings(){
+  const s=state.session||{};
+  return `<div class="settings-section card"><div class="card-title">Perfil</div><p style="margin:0"><strong>${escapeHtml(s.name||'Usuario')}</strong><br><span style="color:var(--muted)">${escapeHtml(s.email||'')}</span></p></div>
+  <div class="settings-section card"><div class="card-title">Plan</div><p>Estás en el plan <strong>Free</strong>. Pro añade monitoreo continuo, alertas por email y escaneo en CI.</p><button class="btn-primary">Mejorar a Pro</button></div>
+  <div class="settings-section card"><div class="card-title">Notificaciones</div><label style="display:block;margin:.4rem 0"><input type="checkbox" checked> Alertas por email cuando aparece una fuga</label><label style="display:block;margin:.4rem 0"><input type="checkbox"> Resumen semanal de seguridad</label></div>
+  <div class="settings-section card"><div class="card-title">API key</div><pre class="code-block" id="apikey">fuga_sk_live_51H8xSECRETxxxxxxxx</pre><button class="btn-copy" data-copy2="apikey">${ICONS.copy} Copiar</button></div>
+  <div class="settings-section card" style="border-color:var(--danger)"><div class="card-title" style="color:var(--danger)">Zona de peligro</div><p style="color:var(--muted)">Borra todos tus proyectos y escaneos de este navegador.</p><button class="btn-danger" id="wipe">${ICONS.trash} Borrar todos mis datos</button></div>`;
+}
+function bindSettings(){
+  const w=document.getElementById('wipe'); if(w) w.onclick=()=>{ if(confirm('¿Borrar todos tus proyectos?')){ localStorage.removeItem('fuga_projects'); state.projects=[]; render(); } };
+  document.querySelectorAll('[data-copy2]').forEach(b=>b.onclick=()=>{const el=document.getElementById(b.dataset.copy2); if(el) copyText(el.textContent);});
+}
+
+// ═══ ARRANQUE ═══
+render();
 </script>
-</body>
-</html>
 </body>
 </html>
