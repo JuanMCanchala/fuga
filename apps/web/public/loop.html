@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FUGA — El loop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#F6F8FC;--surface:#fff;--border:#E4E9F2;--ink:#111725;--muted:#5B6675;--accent:#5B3DF5;--accent-light:#EEF0FE;--ok:#0FA968;--danger:#E5322D}
+html,body{height:100%}
+body{font-family:'Inter',system-ui,sans-serif;background:
+  radial-gradient(1200px 600px at 50% -10%, #fff 0%, var(--bg) 60%);
+  color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;overflow:hidden;padding:24px}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.brand svg{width:30px;height:30px}
+.brand span{font-family:'Space Grotesk';font-weight:700;font-size:1.4rem;letter-spacing:-.01em}
+.tagline{text-align:center;max-width:22ch;font-family:'Space Grotesk';font-weight:700;font-size:1.55rem;line-height:1.25;margin-bottom:26px}
+.tagline .accent{color:var(--accent)}
+
+.stage{position:relative;width:560px;height:560px;max-width:92vw;max-height:92vw}
+.ring-svg{position:absolute;inset:0;width:100%;height:100%}
+.ring-track{fill:none;stroke:var(--border);stroke-width:2}
+/* circunferencia = 2·π·200 ≈ 1257 */
+.ring-comet{fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round;stroke-dasharray:110 1147;stroke-dashoffset:0;transform:rotate(-90deg);transform-origin:280px 280px;animation:travel 8s linear infinite}
+@keyframes travel{to{stroke-dashoffset:-1257}}
+.arrowhead{fill:var(--border)}
+
+.node{position:absolute;width:150px;padding:16px 14px;background:var(--surface);border:1.5px solid var(--border);border-radius:16px;text-align:center;transform:translate(-50%,-50%) scale(.96);opacity:.6;box-shadow:0 4px 12px rgba(15,23,42,.05);animation:nodePulse 8s ease-in-out infinite}
+.node .ic{width:34px;height:34px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:var(--accent-light);color:var(--accent)}
+.node .ic svg{width:20px;height:20px}
+.node h3{font-size:.98rem;letter-spacing:.02em;margin-bottom:3px}
+.node p{font-size:.72rem;color:var(--muted);line-height:1.35}
+.node .num{position:absolute;top:-10px;left:-10px;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono'}
+
+/* posiciones sobre el anillo (radio 200/560 ≈ 35.7% del lado, escala con la caja) */
+.n-scan{left:50%;top:14.3%}
+.n-prove{left:85.7%;top:50%}
+.n-fix{left:50%;top:85.7%}
+.n-verify{left:14.3%;top:50%}
+
+.n-scan{animation-delay:-8s}
+.n-prove{animation-delay:-6s}
+.n-fix{animation-delay:-4s}
+.n-verify{animation-delay:-2s}
+
+@keyframes nodePulse{
+  0%,18%   {opacity:1;transform:translate(-50%,-50%) scale(1.07);box-shadow:0 14px 34px rgba(91,61,245,.28);border-color:var(--accent)}
+  22%,100% {opacity:.6;transform:translate(-50%,-50%) scale(.96);box-shadow:0 4px 12px rgba(15,23,42,.05);border-color:var(--border)}
+}
+
+/* leyenda central que cambia con la etapa */
+.center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:210px;height:70px;text-align:center}
+.center span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:600;color:var(--ink);opacity:0;animation:capCycle 8s ease-in-out infinite;padding:0 6px;line-height:1.3}
+.center .c-scan{animation-delay:-8s}
+.center .c-prove{animation-delay:-6s}
+.center .c-fix{animation-delay:-4s}
+.center .c-verify{animation-delay:-2s}
+.center .hl{color:var(--danger)}
+@keyframes capCycle{0%,18%{opacity:1}22%,100%{opacity:0}}
+
+.footer{margin-top:24px;font-size:.86rem;color:var(--muted)}
+.footer b{color:var(--ink);font-weight:600}
+
+@media(prefers-reduced-motion:reduce){
+  .node,.center span,.ring-comet{animation:none}
+  .node{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  .center .c-scan{opacity:1}
+}
+@media(max-width:600px){.tagline{font-size:1.25rem}.node{width:120px;padding:12px 10px}.node p{display:none}}
+</style>
+</head>
+<body>
+<div class="brand">
+<svg viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#5B3DF5"/><path d="M8 10h16M8 16h12M8 22h8" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><circle cx="24" cy="22" r="4" fill="#E5322D"/><path d="M22.5 22l1.5 1.5 2-2" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<span>FUGA</span>
+</div>
+<p class="tagline">No advierte. <span class="accent">Prueba que un usuario lee los datos de otro.</span></p>
+
+<div class="stage">
+  <svg class="ring-svg" viewBox="0 0 560 560" aria-hidden="true">
+    <circle class="ring-track" cx="280" cy="280" r="200"/>
+    <circle class="ring-comet" cx="280" cy="280" r="200"/>
+    <!-- flechas de dirección (horario) -->
+    <path class="arrowhead" d="M480 274 l10 6 -10 6 z"/>
+    <path class="arrowhead" d="M286 480 l-6 10 -6 -10 z"/>
+    <path class="arrowhead" d="M80 286 l-10 -6 10 -6 z"/>
+    <path class="arrowhead" d="M274 80 l6 -10 6 10 z"/>
+  </svg>
+
+  <div class="center">
+    <span class="c-scan">Escanea tus reglas y calcula el riesgo.</span>
+    <span class="c-prove">Prueba la fuga — incluida la <span class="hl">de entre usuarios</span>.</span>
+    <span class="c-fix">Genera el fix. El LLM propone, el evaluador valida.</span>
+    <span class="c-verify">Re-ataca. Solo pasa si el atacante queda en DENY.</span>
+  </div>
+
+  <div class="node n-scan"><span class="num">1</span>
+    <div class="ic"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="9" r="6"/><path d="M14 14l4 4"/></svg></div>
+    <h3>SCAN</h3><p>Análisis y puntaje de riesgo</p>
+  </div>
+  <div class="node n-prove"><span class="num">2</span>
+    <div class="ic"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 2v6M7 4l3 4 3-4"/><path d="M4 12c0 3.3 2.7 6 6 6s6-2.7 6-6"/></svg></div>
+    <h3>PROVE</h3><p>Ataca y exfiltra los datos</p>
+  </div>
+  <div class="node n-fix"><span class="num">3</span>
+    <div class="ic"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14.5 5.5l-9 9M11 5l4 4"/><path d="M4 16l1-4 9-9 3 3-9 9-4 1z"/></svg></div>
+    <h3>FIX</h3><p>Reglas endurecidas, validadas</p>
+  </div>
+  <div class="node n-verify"><span class="num">4</span>
+    <div class="ic"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10l4 4 8-8"/></svg></div>
+    <h3>VERIFY</h3><p>Re-ataca: el atacante en DENY</p>
+  </div>
+</div>
+
+<p class="footer"><b>Loop cerrado</b> · scan → prove → fix → verify · fuga-two.vercel.app</p>
+</body>
+</html>
