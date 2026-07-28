@@ -5,6 +5,7 @@
 **Proyecto:** FUGA · https://github.com/JuanMCanchala/fuga
 **Demo:** https://fuga-two.vercel.app
 **App vulnerable de demostración:** https://fuga-two.vercel.app/demo-vulnerable.html
+**Animación del loop (Escena 2):** https://fuga-two.vercel.app/loop.html
 
 > El hilo conductor del video es el DIFERENCIADOR: FUGA prueba la **fuga entre
 > usuarios** (un usuario lee los datos de otro), el bug que ningún otro escáner
@@ -25,7 +26,7 @@
 
 | | |
 |---|---|
-| **En pantalla** | Logo de FUGA. Loop animado SCAN → PROVE → FIX → VERIFY. Texto: "No advierte. Prueba que un usuario lee los datos de otro." |
+| **En pantalla** | Abre **/loop.html** (pantalla completa): el loop animado SCAN → PROVE → FIX → VERIFY, los nodos iluminándose en secuencia y el tagline "No advierte. Prueba que un usuario lee los datos de otro." |
 | **Narración** | «FUGA es un agente especializado que no advierte sobre fugas: las demuestra, las repara y lo verifica. Y su sello es probar la **fuga entre usuarios**. En vez de atacar como anónimo, ataca con dos identidades: crea a Mallory y demuestra que llega a los datos de Alice. Luego genera el fix acotado al dueño —un LLM propone, un evaluador propio valida— y re-lanza el ataque para confirmar que Mallory ya no entra. Prueba, no opina.» |
 
 ---
@@ -89,6 +90,7 @@
 ## Checklist de grabación
 
 - [ ] Abrir **/demo-vulnerable.html** para el hook (probar el botón "Entrar como Mallory").
+- [ ] Abrir **/loop.html** para la Escena 2 (pantalla completa F11, cursor fuera de cuadro; el ciclo dura 8s — deja que dé al menos una vuelta).
 - [ ] Confirmar que **"Auditar esta app con FUGA"** carga la consola con las reglas de MediCloud ya puestas (un clic → "Escanear ahora").
 - [ ] Producción con **`FUGA_LLM=openai`** activo (el fix debe salir "llm-validado"). Probar un scan antes de grabar.
 - [ ] Editor con el **MCP** conectado (config en `.kiro/settings/mcp.json`); tener a mano una llamada a `fuga_audit`.
