@@ -156,6 +156,7 @@ Configurable con `FUGA_LLM`:
 | `bedrock` | **Amazon Bedrock** (AWS) | Reescritura de reglas en la nube |
 | `ollama` | Modelo **local** | Clasificación de PII sin enviar tu esquema a la nube |
 | `anthropic` | Claude API | Alternativa en la nube |
+| `openai` | GPT (`gpt-4o-mini` por defecto) | Reescritura de reglas vía OpenAI |
 | `none` | Sin LLM | Plantilla determinista (funciona siempre) |
 
 FUGA funciona **sin ningún LLM ni clave**: el fix determinista y el oráculo
