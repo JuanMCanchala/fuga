@@ -5,9 +5,11 @@
  * funciona igual sin ningún LLM, con un fallback determinista.
  *
  * Orden de resolución (configurable con FUGA_LLM):
- *   bedrock  -> Amazon Bedrock (AWS, nube)      [import dinámico del SDK]
- *   ollama   -> modelo local (privacidad)        [HTTP localhost:11434]
- *   anthropic-> Claude vía API                    [HTTP api.anthropic.com]
+ *   kiro     -> Kiro CLI headless (créditos)      [spawn kiro-cli]
+ *   bedrock  -> Amazon Bedrock (AWS, nube)         [import dinámico del SDK]
+ *   ollama   -> modelo local (privacidad)          [HTTP localhost:11434]
+ *   anthropic-> Claude vía API                      [HTTP api.anthropic.com]
+ *   openai   -> GPT vía API                          [HTTP api.openai.com]
  *   none     -> sin LLM (plantillas deterministas)
  */
 
@@ -146,6 +148,40 @@ class AnthropicProvider implements LlmProvider {
   }
 }
 
+// --- OpenAI (API) ------------------------------------------------------------
+
+class OpenAIProvider implements LlmProvider {
+  name = 'openai';
+  // gpt-4o-mini: barato y suficiente (el evaluador valida el resultado igual).
+  // Sobreescribe con FUGA_OPENAI_MODEL (ej. gpt-4o para más calidad).
+  private model = process.env.FUGA_OPENAI_MODEL ?? 'gpt-4o-mini';
+  private base = process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1';
+
+  async available(): Promise<boolean> {
+    if (process.env.FUGA_LLM && process.env.FUGA_LLM !== 'openai') return false;
+    return Boolean(process.env.OPENAI_API_KEY);
+  }
+
+  async complete(messages: LlmMessage[], opts?: { maxTokens?: number; temperature?: number }): Promise<string> {
+    const res = await fetch(`${this.base}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${process.env.OPENAI_API_KEY!}`,
+      },
+      body: JSON.stringify({
+        model: this.model,
+        max_tokens: opts?.maxTokens ?? 1500,
+        temperature: opts?.temperature ?? 0,
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      }),
+    });
+    if (!res.ok) return '';
+    const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+    return data.choices?.[0]?.message?.content ?? '';
+  }
+}
+
 // --- Kiro (CLI headless) -----------------------------------------------------
 
 /**
@@ -213,6 +249,7 @@ const PROVIDERS: LlmProvider[] = [
   new BedrockProvider(),
   new OllamaProvider(),
   new AnthropicProvider(),
+  new OpenAIProvider(),
 ];
 
 /** Selecciona el primer proveedor disponible según env; nunca lanza. */
