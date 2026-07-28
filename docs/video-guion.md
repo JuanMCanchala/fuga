@@ -1,120 +1,110 @@
 # Guion del Video — FUGA
 
-**Duración máxima:** 5:00  
-**Evento:** Hackatón Código Facilito × Kiro — Reto 3: Agentes especializados  
-**Proyecto:** FUGA · https://github.com/JuanMCanchala/fuga  
+**Duración máxima:** 5:00
+**Evento:** Hackatón Código Facilito × Kiro — Reto 3: Agentes especializados
+**Proyecto:** FUGA · https://github.com/JuanMCanchala/fuga
 **Demo:** https://fuga-two.vercel.app
+**App vulnerable de demostración:** https://fuga-two.vercel.app/demo-vulnerable.html
+
+> El hilo conductor del video es el DIFERENCIADOR: FUGA prueba la **fuga entre
+> usuarios** (un usuario lee los datos de otro), el bug que ningún otro escáner
+> del mercado detecta. Todo lo demás cuelga de ahí.
 
 ---
 
-## ESCENA 1 — Hook + El problema
+## ESCENA 1 — Hook: el bug que nadie ve (0:00 – 0:40)
 
 | | |
 |---|---|
-| **Tiempo** | 0:00 – 0:30 |
-| **En pantalla** | Código de reglas de Firestore con `allow read, write: if true;` resaltado en rojo. Transición a una terminal que muestra un JSON con datos personales (cédula, tarjeta de crédito) accesibles sin autenticación. |
-| **Narración** | «Una sola línea. Con esta línea, cualquier persona en Internet puede leer toda tu base de datos: historias clínicas, tarjetas de crédito, cédulas. Miles de apps en producción tienen exactamente esto. Los linters te dicen "parece inseguro"… y tú lo ignoras porque no ves el impacto. ¿Y si en vez de advertirte, te mostrara tus datos filtrándose en vivo?» |
+| **En pantalla** | Abre **/demo-vulnerable.html** (MediCloud, portal de pacientes). Se ve la historia clínica de "Alice" (cédula, diagnóstico, tarjeta). Click en **"Entrar como Mallory (otra cuenta)"** → aparece el banner rojo: Mallory ve el registro de Alice. |
+| **Narración** | «Esta es MediCloud, una app de telemedicina hecha rápido con IA. Se ve profesional. Pero mira: entro como Mallory —una cuenta cualquiera, no soy admin— y veo la historia clínica completa de otra paciente: su diagnóstico, su cédula, su tarjeta. La regla exige estar logueado, así que **todos los escáneres del mercado dirían que esta app es segura**. Revisan si la puerta está cerrada, no si tienes permiso de entrar a la habitación. Ese es el bug que nadie prueba… hasta ahora.» |
 
 ---
 
-## ESCENA 2 — Qué es FUGA y su diferencia
+## ESCENA 2 — Qué es FUGA (0:40 – 1:10)
 
 | | |
 |---|---|
-| **Tiempo** | 0:30 – 1:10 |
-| **En pantalla** | Logo de FUGA. Diagrama animado del loop: SCAN → PROVE → FIX → VERIFY con flechas cíclicas. Texto en pantalla: "No advierte. Demuestra." |
-| **Narración** | «FUGA es un agente especializado que no advierte sobre fugas de datos: las demuestra, las repara y lo verifica. El loop es simple: primero escanea tus reglas y calcula el riesgo. Luego lanza un atacante anónimo real y te muestra exactamente qué datos se filtran. Después genera reglas endurecidas de mínimo privilegio —un LLM propone, pero un evaluador propio valida— y finalmente re-ataca: solo acepta el fix cuando el atacante queda denegado. Prueba, no opina.» |
+| **En pantalla** | Logo de FUGA. Loop animado SCAN → PROVE → FIX → VERIFY. Texto: "No advierte. Prueba que un usuario lee los datos de otro." |
+| **Narración** | «FUGA es un agente especializado que no advierte sobre fugas: las demuestra, las repara y lo verifica. Y su sello es probar la **fuga entre usuarios**. En vez de atacar como anónimo, ataca con dos identidades: crea a Mallory y demuestra que llega a los datos de Alice. Luego genera el fix acotado al dueño —un LLM propone, un evaluador propio valida— y re-lanza el ataque para confirmar que Mallory ya no entra. Prueba, no opina.» |
 
 ---
 
-## ESCENA 3 — DEMO en vivo (Command Center – Clínica MediCloud)
+## ESCENA 3 — DEMO en vivo (1:10 – 3:10)
 
 | | |
 |---|---|
-| **Tiempo** | 1:10 – 3:00 |
-| **En pantalla** | Navegador en https://fuga-two.vercel.app. Se selecciona el preset "Clínica MediCloud" en el command center. |
+| **En pantalla** | En la app MediCloud, click en **"Auditar esta app con FUGA"**. Abre la consola (**/app.html**) con las reglas de MediCloud **ya cargadas**. Click en **"Escanear ahora"**. |
 
-### 3a — SCAN (1:10 – 1:35)
-
-| | |
-|---|---|
-| **En pantalla** | Click en SCAN. Aparece: riesgo 100/100, hallazgos críticos resaltados (lectura pública de historias clínicas, pagos públicos con tarjeta+CVV, list público de agenda, create anónimo). |
-| **Narración** | «Cargamos el caso de MediCloud: una app de telemedicina con reglas vulnerables. El scan devuelve riesgo 100 sobre 100. Lectura pública de historias clínicas, pagos con tarjeta y CVV expuestos, agenda listable por cualquiera, y creación anónima. Pero esto todavía es solo análisis estático. Ahora viene lo que nos diferencia.» |
-
-### 3b — PROVE (1:35 – 2:10)
+### 3a — SCAN + el diferenciador (1:10 – 2:00)
 
 | | |
 |---|---|
-| **En pantalla** | Click en PROVE. Aparecen en rojo los documentos exfiltrados: historia clínica de un paciente (cédula, diagnóstico) y tarjeta de crédito (número, CVV). |
-| **Narración** | «PROVE lanza el atacante anónimo. Sin credenciales, sin tokens. Y aquí están los datos: la historia clínica de un paciente —su cédula, su diagnóstico— y una tarjeta de crédito completa con CVV. Esto no es una advertencia: es la prueba. Estos datos están en rojo porque son exfiltrables ahora mismo. Un atacante real haría exactamente esto.» |
+| **En pantalla** | El reporte carga: gauge en **100/100, grado F**. Arriba, el callout rojo **"Fuga entre usuarios"** con la historia de Alice vs Mallory, la evidencia (nombre, cédula, diagnóstico, teléfono en rojo) y la regla culpable. Debajo, los hallazgos: FUGA-IDOR-READ, FUGA-IDOR-WRITE, más la fuga pública de pagos. |
+| **Narración** | «Un clic y FUGA carga las reglas de MediCloud. Riesgo 100 sobre 100. Y aquí está lo que ningún otro detecta: la fuga entre usuarios. FUGA lo probó con dos cuentas —Mallory leyó el registro de Alice— y te muestra exactamente qué datos quedan expuestos: nombre, cédula, diagnóstico, teléfono. Además cazó la fuga pública de pagos, con tarjeta y CVV. Esto no es un análisis estático: es el ataque, ejecutado.» |
 
-### 3c — FIX (2:10 – 2:35)
-
-| | |
-|---|---|
-| **En pantalla** | Click en FIX. Aparecen las reglas endurecidas generadas: cada colección con sus condiciones específicas (owner-only read en historias, authenticated write en pagos, etc.). Se resalta la diferencia con las reglas originales. |
-| **Narración** | «FIX genera reglas de mínimo privilegio. Cada colección queda protegida según su contexto: las historias clínicas solo las lee su dueño, los pagos requieren autenticación, la agenda se restringe al personal. El LLM propone, pero el evaluador portátil valida: ninguna regla alucinada pasa.» |
-
-### 3d — VERIFY (2:35 – 3:00)
+### 3b — FIX con IA validada (2:00 – 2:40)
 
 | | |
 |---|---|
-| **En pantalla** | Click en VERIFY. El mismo atacante se re-ejecuta. Resultado: todas las peticiones quedan en DENY (verde). Mensaje: "Fuga eliminada y verificada ✔". |
-| **Narración** | «Y VERIFY cierra el loop. El mismo atacante anónimo se lanza de nuevo contra las reglas endurecidas. Resultado: todo denegado. La fuga ya no existe. No lo creemos: lo probamos. Loop cerrado.» |
+| **En pantalla** | Sección "Tu fix": reglas endurecidas. Se resalta que cada colección queda **acotada al dueño** (`request.auth.uid == ...`). Menciona en pantalla: motor **OpenAI (gpt-4o-mini)**, etiqueta **"llm-validado"**. |
+| **Narración** | «El fix lo redacta un modelo de OpenAI, pero no confiamos en él a ciegas: el evaluador portátil re-lanza el ataque y solo acepta las reglas si Mallory queda bloqueada. Por eso dice "validado". Las historias clínicas ahora solo las lee su dueño; los pagos exigen autenticación y propiedad. LLM propone, evaluador dispone.» |
+
+### 3c — VERIFY: loop cerrado de verdad (2:40 – 3:10)
+
+| | |
+|---|---|
+| **En pantalla** | Banner verde: "Verificado: el atacante anónimo Y cualquier otro usuario ajeno quedan bloqueados." |
+| **Narración** | «Y verify cierra el loop. Re-lanzamos los dos ataques contra las reglas nuevas: el anónimo y el de entre usuarios. Ambos, denegados. La fuga que Mallory explotaba ya no existe. No lo creemos: lo probamos.» |
 
 ---
 
-## ESCENA 4 — Cómo funciona por dentro
+## ESCENA 4 — Por dentro + MCP en el editor (3:10 – 4:05)
 
 | | |
 |---|---|
-| **Tiempo** | 3:00 – 4:00 |
-| **En pantalla** | Diagrama de arquitectura (del README): Parser → Evaluador → SCAN/PROVE/FIX. Se resaltan los componentes uno a uno. Código del evaluador en TypeScript. Vista del RAG infiriendo esquema desde código cliente. Logo de MCP con los tres tools. |
-| **Narración** | «Por dentro, FUGA tiene cuatro piezas clave. Primero: un evaluador de reglas propio escrito en TypeScript. Es un oráculo portátil que decide ALLOW o DENY sin necesitar Java ni el emulador de Firebase. Corre en CI, en el navegador, en cualquier lado. Segundo: RAG sobre tu código cliente. Lee tus archivos, infiere qué colecciones existen y qué campos tienen. Sabe que una fuga en "pagos" con campo "numeroTarjeta" no es igual a una en "logs". Tercero: el LLM es pluggable y nunca autoritativo. Propone reglas, pero solo se aceptan si el evaluador las valida contra el atacante. Y cuarto: FUGA se expone como servidor MCP con tres tools —fuga_scan, fuga_prove, fuga_fix— para que cualquier agente de IA lo use a media conversación.» |
+| **En pantalla** | Diagrama de arquitectura. Luego, un **editor con MCP** (Cursor/Kiro): el agente llama a **`fuga_audit`** sobre unas reglas y devuelve el resumen: "FUGA ENTRE USUARIOS: 1 de lectura, 1 de escritura… atacantes BLOQUEADOS". |
+| **Narración** | «Por dentro, cuatro piezas. Un evaluador de reglas propio en TypeScript: decide ALLOW o DENY sin Java ni emulador, así que corre en CI y en el navegador —y es lo que nos permite simular a dos usuarios y probar la fuga entre ellos. Un RAG que lee tu código y sabe que "pacientes" guarda diagnósticos. Soporte multi-backend: Firestore, Realtime Database y Supabase. Y un servidor MCP: aquí, dentro del editor, el agente llama a `fuga_audit` mientras programas, ve la fuga entre usuarios y aplica el fix. FUGA no es una web donde pegas una URL: vive donde se escribe el bug.» |
 
 ---
 
-## ESCENA 5 — AWS (Bedrock) + Kiro
+## ESCENA 5 — IA (OpenAI/Bedrock) + Kiro (4:05 – 4:40)
 
 | | |
 |---|---|
-| **Tiempo** | 4:00 – 4:40 |
-| **En pantalla** | Logo de Amazon Bedrock → configuración `FUGA_LLM=bedrock`. Logo de Kiro → carpeta `.kiro/` abierta mostrando specs, steering, agents. Fragmento de `fuga-auditor`. Resultado de la auditoría de Kiro (docs/kiro-review.md). |
-| **Narración** | «En la nube usamos Amazon Bedrock como motor LLM para la reescritura de reglas. Es una opción: también puedes correr Ollama local para no enviar tu esquema a ningún servidor. Y todo el proyecto se construyó con el flujo spec-driven de Kiro: requirements, design, tasks, steering, hooks y un agente dedicado —fuga-auditor— que auditó y probó FUGA de punta a punta. Kiro no solo escribió código: validó que el agente funciona.» |
+| **En pantalla** | `FUGA_LLM=openai` en producción. Menciona alternativas: Bedrock (AWS), Ollama local, plantilla determinista. Luego la carpeta **`.kiro/`**: specs, steering, agente `fuga-auditor`, hooks. |
+| **Narración** | «El motor de IA es intercambiable: en producción usamos OpenAI, pero puedes correr Amazon Bedrock en la nube, Ollama en local para no enviar tu esquema a nadie, o la plantilla determinista sin ninguna clave. FUGA funciona igual sin IA. Y todo se construyó con el flujo spec-driven de Kiro: requirements, design, tasks, steering, hooks y un agente `fuga-auditor` que auditó FUGA de punta a punta —y encontró bugs reales que corregimos.» |
 
 ---
 
-## ESCENA 6 — Cierre
+## ESCENA 6 — Cierre (4:40 – 5:00)
 
 | | |
 |---|---|
-| **Tiempo** | 4:40 – 5:00 |
-| **En pantalla** | Pantalla dividida: a la izquierda el demo con "Fuga eliminada ✔", a la derecha el repo de GitHub. URL del demo y del repo en texto grande. |
-| **Narración** | «FUGA convierte "no sabía que mi base estaba abierta" en "vi mis datos filtrarse, apliqué el fix y verifiqué que ya no ocurre"… en menos de dos minutos. El demo está en vivo, el código es open source. Pruébalo. Gracias.» |
+| **En pantalla** | Split: izquierda "atacantes bloqueados ✔", derecha el repo de GitHub. URLs grandes: fuga-two.vercel.app · github.com/JuanMCanchala/fuga |
+| **Narración** | «El mercado está lleno de escáneres que detectan la puerta abierta. FUGA es el único que prueba que un usuario puede leer los datos de otro —y escribe el fix que lo cierra. De "no sabía que Mallory veía a mis pacientes" a "probado, reparado y verificado" en dos minutos. Demo en vivo, código abierto. Pruébalo. Gracias.» |
 
 ---
 
 ## Checklist de grabación
 
-- [ ] Navegador abierto en https://fuga-two.vercel.app con el preset "Clínica MediCloud" precargado.
-- [ ] Repo abierto en https://github.com/JuanMCanchala/fuga (pestaña o ventana secundaria).
-- [ ] Resolución de grabación: 1080p mínimo, fuente legible (≥14px).
-- [ ] No mostrar datos sensibles reales (los datos del demo son sintéticos/ficticios).
-- [ ] Verificar que el demo responde correctamente antes de grabar (probar SCAN/PROVE/FIX/VERIFY).
-- [ ] Micrófono configurado, sin ruido de fondo.
-- [ ] Cronómetro visible durante la grabación para respetar el límite de 5:00.
-- [ ] Tener el diagrama de arquitectura listo (se puede usar el del README o una versión limpia).
-- [ ] Mostrar brevemente la carpeta `.kiro/` en el editor (specs, steering, agents).
-- [ ] Cerrar notificaciones del sistema operativo y pestañas irrelevantes.
+- [ ] Abrir **/demo-vulnerable.html** para el hook (probar el botón "Entrar como Mallory").
+- [ ] Confirmar que **"Auditar esta app con FUGA"** carga la consola con las reglas de MediCloud ya puestas (un clic → "Escanear ahora").
+- [ ] Producción con **`FUGA_LLM=openai`** activo (el fix debe salir "llm-validado"). Probar un scan antes de grabar.
+- [ ] Editor con el **MCP** conectado (config en `.kiro/settings/mcp.json`); tener a mano una llamada a `fuga_audit`.
+- [ ] Repo abierto en github.com/JuanMCanchala/fuga y carpeta `.kiro/` a la vista.
+- [ ] 1080p mínimo, fuente ≥14px, notificaciones del SO silenciadas, micrófono limpio.
+- [ ] Datos del demo son ficticios (banner visible en MediCloud).
+- [ ] Cronómetro visible para respetar el límite de 5:00.
 
 ---
 
 ## Frases clave (memorables)
 
-1. **«No advierte. Demuestra.»**
-2. **«Esto no es una advertencia: es la prueba.»**
-3. **«El LLM propone, el evaluador dispone.»**
-4. **«No lo creemos: lo probamos. Loop cerrado.»**
-5. **«Una sola línea expone toda tu base de datos.»**
-6. **«Prueba, no opina.»**
-7. **«Vi mis datos filtrarse, apliqué el fix y verifiqué que ya no ocurre.»**
+1. **«Revisan si la puerta está cerrada, no si tienes permiso de entrar.»**
+2. **«El único que prueba que un usuario lee los datos de otro.»**
+3. **«No advierte. Prueba.»**
+4. **«El LLM propone, el evaluador dispone.»**
+5. **«No lo creemos: lo probamos. Loop cerrado.»**
+6. **«FUGA vive donde se escribe el bug.»**
+7. **«De "no sabía que Mallory veía a mis pacientes" a probado, reparado y verificado.»**

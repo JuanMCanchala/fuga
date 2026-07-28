@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediCloud — Portal de Pacientes (demo vulnerable)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#F1F5F9;--surface:#fff;--border:#E2E8F0;--ink:#0F172A;--muted:#64748B;--teal:#0D9488;--teal-light:#CCFBF1;--danger:#E11D48;--danger-light:#FFE4E6;--ok:#0FA968}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:0 20px}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif}
+code,pre{font-family:'JetBrains Mono',monospace}
+.demo-banner{background:#FEF3C7;border-bottom:1px solid #FDE68A;color:#92400E;text-align:center;padding:9px 16px;font-size:.85rem;font-weight:500}
+.demo-banner b{font-weight:700}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 0}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:10px;font-family:'Space Grotesk';font-weight:700;font-size:1.2rem}
+.brand svg{width:28px;height:28px}
+.pill{font-size:.72rem;font-weight:600;color:var(--teal);background:var(--teal-light);padding:3px 9px;border-radius:999px}
+.hero{padding:38px 0 10px}
+.hero h1{font-size:1.9rem;line-height:1.2;margin-bottom:8px}
+.hero p{color:var(--muted);max-width:60ch}
+section{padding:26px 0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:0 1px 3px rgba(15,23,42,.05)}
+.card+.card{margin-top:16px}
+.label{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.record{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;font-size:.92rem}
+.record dt{color:var(--muted)}
+.record dd{font-weight:600;font-family:'JetBrains Mono';font-size:.86rem}
+.pii{color:var(--danger)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;font-weight:600;font-size:.9rem;border:1px solid transparent;cursor:pointer;transition:.15s;text-decoration:none}
+.btn-teal{background:var(--teal);color:#fff}
+.btn-teal:hover{background:#0B7A70}
+.btn-ghost{background:var(--surface);border-color:var(--border);color:var(--ink)}
+.btn-ghost:hover{border-color:var(--teal)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{background:#BE123C}
+.btn svg{width:16px;height:16px}
+.session-tag{display:inline-flex;align-items:center;gap:7px;font-size:.85rem;font-weight:600;padding:5px 12px;border-radius:999px;margin-bottom:14px}
+.session-alice{background:#DCFCE7;color:#166534}
+.session-mallory{background:var(--danger-light);color:#9F1239}
+.avatar{width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:.7rem;color:#fff}
+.leak-alert{margin-top:16px;padding:14px 16px;border:2px solid var(--danger);background:var(--danger-light);border-radius:12px;font-size:.9rem;display:none}
+.leak-alert.show{display:block}
+.leak-alert strong{color:var(--danger)}
+pre.rules{background:#0F172A;color:#E2E8F0;border-radius:12px;padding:18px;overflow-x:auto;font-size:.82rem;line-height:1.55;margin:12px 0}
+pre.rules .cmt{color:#64748B}
+pre.rules .bad{color:#FCA5A5;font-weight:600}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.foot{padding:34px 0;color:var(--muted);font-size:.82rem;text-align:center}
+.foot a{color:var(--teal);font-weight:600}
+.muted{color:var(--muted)}
+.hint{font-size:.82rem;color:var(--muted);margin-top:8px}
+@media(max-width:560px){.record{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="demo-banner"><b>App de demostración ficticia y deliberadamente insegura.</b> Existe solo para mostrar qué detecta FUGA. Ningún dato es real.</div>
+
+<div class="topbar"><div class="wrap">
+<div class="brand">
+<svg viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#0D9488"/><path d="M16 8v16M8 16h16" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
+MediCloud <span class="pill">Portal de pacientes</span>
+</div>
+<a href="/app.html#demo=medicloud" class="btn btn-teal">
+<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 2l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V5l7-3z"/></svg>
+Auditar esta app con FUGA
+</a>
+</div></div>
+
+<div class="wrap">
+<div class="hero">
+<h1>Tu historia clínica, siempre a la mano.</h1>
+<p>MediCloud es una app de telemedicina construida rápido con IA. Se ve profesional y funciona&hellip; pero sus reglas de seguridad tienen dos fallos que cualquiera puede explotar. Este es el tipo de app que FUGA audita.</p>
+</div>
+
+<!-- LA APP -->
+<section>
+<div class="card">
+<div class="label">Sesión actual</div>
+<div id="session-tag" class="session-tag session-alice"><span class="avatar" style="background:#16A34A">A</span> Conectada como <b style="margin-left:2px">Alice Pérez</b> (paciente)</div>
+<div class="label" style="margin-top:6px">Historia clínica que estás viendo</div>
+<dl class="record" id="record">
+  <dt>Paciente</dt><dd id="r-nombre">Alice Pérez</dd>
+  <dt>Cédula</dt><dd class="pii">1.032.456.789</dd>
+  <dt>Diagnóstico</dt><dd class="pii">Diabetes tipo 2</dd>
+  <dt>Tipo de sangre</dt><dd>O+</dd>
+  <dt>Teléfono</dt><dd class="pii">+57 300 123 4567</dd>
+  <dt>Tarjeta registrada</dt><dd class="pii">4111 1111 1111 1111 · CVV 321</dd>
+</dl>
+</div>
+
+<!-- LA FUGA EN VIVO -->
+<div class="card">
+<div class="label">El fallo, en vivo</div>
+<p style="font-size:.92rem;margin-bottom:14px">La regla de MediCloud solo exige <b>estar logueado</b>. No comprueba que el paciente que consultas sea el tuyo. Cambia de cuenta y compruébalo:</p>
+<div class="row">
+  <button class="btn btn-ghost" id="btn-alice">Entrar como Alice (dueña)</button>
+  <button class="btn btn-danger" id="btn-mallory">Entrar como Mallory (otra cuenta)</button>
+</div>
+<div class="hint" id="hint">Alice ve su propio registro: correcto. Ahora entra como Mallory &mdash; una cuenta cualquiera, sin ser admin&mdash; y mira lo que pasa.</div>
+<div class="leak-alert" id="leak"><strong>Fuga entre usuarios.</strong> Mallory <b>no es</b> Alice y aun así ve —y podría editar— su historia clínica completa: diagnóstico, cédula, teléfono y tarjeta. Ningún linter clásico marca esto, porque la regla &laquo;parece&raquo; segura (exige login). FUGA lo <b>prueba</b>.</div>
+</div>
+</section>
+
+<!-- LAS REGLAS -->
+<section>
+<div class="card">
+<div class="label">Debajo del capó: sus reglas de seguridad</div>
+<pre class="rules" id="rules-block"><span class="cmt">rules_version = '2';</span>
+service cloud.firestore {
+  match /databases/{db}/documents {
+    <span class="cmt">// Pagos: cualquiera en internet lee y escribe (fuga pública).</span>
+    match /pagos/{id} { allow read, write: <span class="bad">if true;</span> }
+    <span class="cmt">// Pacientes: exige login, pero NO comprueba el dueño (fuga entre usuarios).</span>
+    match /pacientes/{pacienteId} { allow read, write: <span class="bad">if request.auth != null;</span> }
+  }
+}</pre>
+<div class="row">
+  <button class="btn btn-ghost" id="copy-rules">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M3 11V3a1.5 1.5 0 011.5-1.5H11"/></svg>
+    Copiar reglas
+  </button>
+  <a href="/app.html#demo=medicloud" class="btn btn-teal">Auditar en FUGA &rarr;</a>
+</div>
+<div class="hint">El botón abre la consola de FUGA con estas reglas ya cargadas: solo pulsa &laquo;Escanear ahora&raquo;.</div>
+</div>
+</section>
+
+<div class="foot">
+MediCloud es una demostración de <a href="/">FUGA</a>. &nbsp;·&nbsp; <a href="/app.html">Abrir la consola</a> &nbsp;·&nbsp; <a href="https://github.com/JuanMCanchala/fuga" target="_blank">Repositorio</a>
+</div>
+</div>
+
+<script>
+const RULES = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    match /pagos/{id} { allow read, write: if true; }
+    match /pacientes/{pacienteId} { allow read, write: if request.auth != null; }
+  }
+}`;
+const tag = document.getElementById('session-tag');
+const hint = document.getElementById('hint');
+const leak = document.getElementById('leak');
+document.getElementById('btn-alice').onclick = () => {
+  tag.className = 'session-tag session-alice';
+  tag.innerHTML = '<span class="avatar" style="background:#16A34A">A</span> Conectada como <b style="margin-left:2px">Alice Pérez</b> (paciente)';
+  hint.style.display = 'block';
+  hint.textContent = 'Alice ve su propio registro: correcto. Ahora entra como Mallory y mira lo que pasa.';
+  leak.classList.remove('show');
+};
+document.getElementById('btn-mallory').onclick = () => {
+  tag.className = 'session-tag session-mallory';
+  tag.innerHTML = '<span class="avatar" style="background:#E11D48">M</span> Conectada como <b style="margin-left:2px">Mallory</b> — una cuenta cualquiera (NO es Alice)';
+  hint.style.display = 'none';
+  leak.classList.add('show');
+};
+document.getElementById('copy-rules').onclick = async () => {
+  try { await navigator.clipboard.writeText(RULES); const b = document.getElementById('copy-rules'); const t = b.innerHTML; b.textContent = '¡Copiado!'; setTimeout(() => b.innerHTML = t, 1500); } catch (e) {}
+};
+</script>
+</body>
+</html>

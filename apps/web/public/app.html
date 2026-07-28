@@ -404,6 +404,10 @@ const EXAMPLES = {
   supabase: `create table pagos (id uuid, user_id uuid, numeroTarjeta text, cvv text);\ncreate table perfiles (id uuid, user_id uuid, email text, telefono text);\n-- RLS activado, pero cualquier usuario logueado lee TODOS los perfiles (fuga entre usuarios).\nalter table perfiles enable row level security;\ncreate policy perfiles_auth on perfiles for select to authenticated using (true);`
 };
 
+// Demo "MediCloud" (desde /demo-vulnerable.html) — reglas y código para el prefill.
+const MEDICLOUD_RULES = `rules_version = '2';\nservice cloud.firestore {\n  match /databases/{db}/documents {\n    // Pagos: cualquiera en internet lee y escribe (fuga pública).\n    match /pagos/{id} { allow read, write: if true; }\n    // Pacientes: exige login, pero NO comprueba el dueño (fuga entre usuarios).\n    match /pacientes/{pacienteId} { allow read, write: if request.auth != null; }\n  }\n}`;
+const MEDICLOUD_CODE = `// MediCloud — cliente\nsetDoc(doc(db,'pacientes',uid), { nombre, cedula, diagnostico, telefono, tipoSangre });\naddDoc(collection(db,'pagos'), { pacienteId, numeroTarjeta, cvv, monto });`;
+
 // ═══ SVG CHARTS ═══
 function renderGauge(score, size = 140) {
   const grade = getGrade(score);
@@ -1112,6 +1116,13 @@ async function boot() {
         }
       });
     } catch (e) { /* sin nube: la consola sigue funcionando en local */ }
+  }
+  // Prefill desde la demo vulnerable: /app.html#demo=medicloud
+  if (location.hash.indexOf('demo=medicloud') !== -1) {
+    if (!state.session) { state.session = { email: 'demo@fuga.dev', name: 'Usuario Demo', provider: 'demo' }; saveSession(); }
+    state.wizard = { step: 3, backend: 'firestore', name: 'MediCloud', rules: MEDICLOUD_RULES, code: MEDICLOUD_CODE };
+    state.view = 'new-scan';
+    try { history.replaceState(null, '', location.pathname); } catch (e) {}
   }
   render();
 }

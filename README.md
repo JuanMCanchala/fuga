@@ -142,9 +142,18 @@ FUGA se expone como MCP para que un agente lo use a media conversación:
 }
 ```
 
-Tools: `fuga_scan`, `fuga_prove`, `fuga_fix`. Ejemplo de uso por un agente:
-*"revisa la seguridad de estas reglas"* → llama `fuga_prove`, ve las fugas reales,
-llama `fuga_fix`, re-verifica.
+Tools (multi-backend: Firestore, Realtime Database y Supabase):
+
+- `fuga_scan` — hallazgos con severidad, **incluida la fuga entre usuarios (IDOR)**.
+- `fuga_prove` — lanza los atacantes y devuelve los datos exfiltrables (anónimo
+  **y** un segundo usuario accediendo a datos ajenos).
+- `fuga_fix` — reglas endurecidas + tests, validadas por el evaluador.
+- `fuga_audit` — el loop completo `scan → prove → fix → verify` en una llamada,
+  con un resumen legible. Ideal como primer paso.
+
+Ejemplo de uso por un agente: *"audita la seguridad de estas reglas"* → llama
+`fuga_audit`, ve las fugas reales (incluida la de entre usuarios), aplica el fix y
+confirma que los atacantes quedan bloqueados.
 
 ## Motores de IA (local + nube)
 
