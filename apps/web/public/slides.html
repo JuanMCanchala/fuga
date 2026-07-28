@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FUGA — Presentación</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#F6F8FC;--surface:#fff;--border:#E4E9F2;--ink:#111725;--muted:#5B6675;--accent:#5B3DF5;--accent-light:#EEF0FE;--ok:#0FA968;--danger:#E5322D;--high:#F59E0B}
+html,body{height:100%}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--ink);background:var(--bg);overflow:hidden}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif;letter-spacing:-.01em}
+code,pre{font-family:'JetBrains Mono',monospace}
+.deck{position:fixed;inset:0}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:6vh 8vw;opacity:0;visibility:hidden;transform:translateY(14px);transition:opacity .45s ease,transform .45s ease,visibility .45s;background:
+  radial-gradient(1100px 520px at 78% -8%, #fff 0%, var(--bg) 55%)}
+.slide.active{opacity:1;visibility:visible;transform:none}
+.slide.cover{background:linear-gradient(155deg,#ffffff 0%,#F2F0FF 55%,#EAE6FF 100%)}
+.eyebrow{display:inline-block;font-size:.8rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);background:var(--accent-light);padding:5px 12px;border-radius:999px;margin-bottom:22px}
+.eyebrow.red{color:var(--danger);background:#FEE7E6}
+h1{font-size:clamp(2.2rem,6vw,4.2rem);line-height:1.05}
+h2{font-size:clamp(1.7rem,4.2vw,3rem);line-height:1.12;margin-bottom:20px}
+.lead{font-size:clamp(1rem,1.9vw,1.4rem);color:var(--muted);max-width:34ch;line-height:1.5}
+.accent{color:var(--accent)}.red{color:var(--danger)}
+.brand{display:flex;align-items:center;gap:14px;margin-bottom:30px}
+.brand svg{width:clamp(40px,5vw,60px);height:clamp(40px,5vw,60px)}
+.brand span{font-family:'Space Grotesk';font-weight:700;font-size:clamp(1.8rem,4vw,3rem)}
+.foot-urls{position:absolute;left:8vw;bottom:5vh;font-size:.95rem;color:var(--muted)}
+.foot-urls b{color:var(--ink)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:center;margin-top:8px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr;gap:16px}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px 24px;box-shadow:0 6px 24px rgba(17,23,37,.06)}
+.card.bad{border:2px solid var(--danger);background:#FEF6F6}
+.card h3{font-size:1.05rem;margin-bottom:10px}
+.card p{font-size:.95rem;color:var(--muted);line-height:1.5}
+pre.code{background:#0F172A;color:#E2E8F0;border-radius:12px;padding:16px 18px;font-size:clamp(.8rem,1.4vw,1rem);line-height:1.5;overflow-x:auto}
+pre.code .bad{color:#FCA5A5;font-weight:600}
+pre.code .cmt{color:#64748B}
+.who{display:flex;align-items:center;gap:10px;font-size:1rem;margin:7px 0}
+.av{width:26px;height:26px;border-radius:50%;color:#fff;font-weight:700;font-size:.78rem;display:flex;align-items:center;justify-content:center;flex:none}
+.stat-row{display:flex;gap:40px;flex-wrap:wrap;margin:26px 0}
+.stat b{display:block;font-family:'Space Grotesk';font-size:clamp(2.2rem,6vw,3.6rem);line-height:1;color:var(--accent)}
+.stat span{color:var(--muted);font-size:.95rem}
+.pieces{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:10px}
+@media(max-width:820px){.pieces{grid-template-columns:1fr}}
+.piece{display:flex;gap:14px;align-items:flex-start}
+.piece .ic{width:40px;height:40px;border-radius:11px;background:var(--accent-light);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
+.piece .ic svg{width:22px;height:22px}
+.piece h3{font-size:1.05rem;margin-bottom:3px}
+.piece p{font-size:.9rem;color:var(--muted);line-height:1.45}
+.chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+.chip{font-size:.9rem;font-weight:600;padding:7px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface)}
+.chip.fs{color:#6D3BEB}.chip.rt{color:#0EA5E9}.chip.sb{color:#EC4899}
+table.cmp{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;font-size:clamp(.85rem,1.5vw,1.05rem)}
+table.cmp th,table.cmp td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--border)}
+table.cmp th{background:#FAFBFF;font-family:'Space Grotesk'}
+table.cmp td.c{text-align:center;width:120px}
+table.cmp tr.star{background:#FEF6F6}
+.yes{color:var(--ok);font-weight:700}.no{color:#C4CCD8}
+.record{display:grid;grid-template-columns:auto 1fr;gap:5px 16px;font-size:.92rem;margin-top:6px}
+.record dt{color:var(--muted)}.record dd{font-family:'JetBrains Mono';font-size:.84rem}
+.pii{color:var(--danger);font-weight:600}
+.verify{margin-top:16px;padding:12px 16px;border:1.5px solid var(--ok);background:#F0FBF6;border-radius:12px;color:#0B7A5B;font-weight:600;font-size:.95rem}
+.built{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+.built .b{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:14px 18px;min-width:150px}
+.built .b b{font-family:'Space Grotesk';display:block;margin-bottom:2px}
+.built .b span{font-size:.85rem;color:var(--muted)}
+/* HUD */
+.progress{position:fixed;top:0;left:0;height:4px;background:var(--accent);transition:width .4s ease;z-index:20}
+.counter{position:fixed;right:18px;bottom:16px;font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums;z-index:20}
+.dots{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;z-index:20}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--border);cursor:pointer;transition:.2s;border:none;padding:0}
+.dot.on{background:var(--accent);width:22px;border-radius:999px}
+.nav{position:fixed;right:18px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:20}
+.nav button{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--surface);cursor:pointer;color:var(--ink);display:flex;align-items:center;justify-content:center}
+.nav button:hover{border-color:var(--accent);color:var(--accent)}
+.nav svg{width:18px;height:18px}
+.hint{position:fixed;left:18px;bottom:16px;font-size:.8rem;color:var(--muted);z-index:20}
+@media(prefers-reduced-motion:reduce){.slide{transition:opacity .2s}}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="deck" id="deck">
+
+  <!-- 1 · COVER -->
+  <section class="slide cover active">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#5B3DF5"/><path d="M8 10h16M8 16h12M8 22h8" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><circle cx="24" cy="22" r="4" fill="#E5322D"/><path d="M22.5 22l1.5 1.5 2-2" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>FUGA</span>
+    </div>
+    <h1>Prueba que un usuario<br><span class="accent">lee los datos de otro.</span></h1>
+    <p class="lead" style="margin-top:20px;max-width:44ch">El agente que no advierte sobre fugas de datos: las <b>demuestra</b>, las repara y lo verifica.</p>
+    <div class="foot-urls">Hackatón Código Facilito × Kiro · Reto 3 · <b>fuga-two.vercel.app</b> · github.com/JuanMCanchala/fuga</div>
+  </section>
+
+  <!-- 2 · PROBLEMA -->
+  <section class="slide">
+    <span class="eyebrow">El problema</span>
+    <h2>La mayoría de apps con IA guardan sus datos<br>en Firebase o Supabase.</h2>
+    <p class="lead" style="max-width:52ch">Y una sola regla mal puesta las deja abiertas al mundo. Es la causa #1 de exposición de datos personales en apps vibe-coded.</p>
+    <div class="stat-row">
+      <div class="stat"><b>~70%</b><span>de apps Supabase sin RLS</span></div>
+      <div class="stat"><b>~60%</b><span>filtran API keys en el frontend</span></div>
+    </div>
+    <pre class="code" style="max-width:640px"><span class="cmt">// una línea, toda tu base de datos expuesta</span>
+allow read, write: <span class="bad">if true;</span></pre>
+  </section>
+
+  <!-- 3 · DIFERENCIADOR -->
+  <section class="slide">
+    <span class="eyebrow red">El bug que ningún escáner ve</span>
+    <h2>Fuga entre usuarios <span class="red">(IDOR)</span></h2>
+    <div class="grid2">
+      <div>
+        <p class="lead" style="max-width:40ch;margin-bottom:16px">La regla exige estar autenticado, pero no comprueba que seas el <b>dueño</b>. Cualquiera con cuenta lee los datos de los demás.</p>
+        <pre class="code"><span class="cmt">match /pacientes/{id} {</span>
+  allow read, write: <span class="bad">if request.auth != null;</span>
+<span class="cmt">}</span></pre>
+        <p class="lead" style="font-size:1rem;margin-top:14px;max-width:42ch">Un anónimo obtiene <b>DENY</b>, así que todos los escáneres dicen «seguro» y siguen de largo.</p>
+      </div>
+      <div class="card bad">
+        <h3 class="red">FUGA lo prueba con dos cuentas</h3>
+        <div class="who"><span class="av" style="background:#16A34A">A</span> <span><b>Alice</b> es dueña del registro.</span></div>
+        <div class="who"><span class="av" style="background:#E11D48">M</span> <span><b>Mallory</b> es otra cuenta cualquiera.</span></div>
+        <div class="verify" style="border-color:var(--danger);background:#FEECEC;color:var(--danger)">Mallory leyó y modificó el registro de Alice. Fuga probada.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · QUÉ ES -->
+  <section class="slide">
+    <span class="eyebrow">Qué es FUGA</span>
+    <h2>No advierte. <span class="accent">Prueba.</span></h2>
+    <p class="lead" style="max-width:50ch;margin-bottom:26px">Un agente especializado que ejecuta el ataque, te muestra los datos filtrados, genera el fix y re-ataca para confirmar que la fuga se cerró.</p>
+    <div class="chips" style="margin-top:4px">
+      <span class="chip">1 · SCAN</span>
+      <span class="chip">2 · PROVE</span>
+      <span class="chip">3 · FIX</span>
+      <span class="chip">4 · VERIFY</span>
+      <span class="chip accent" style="color:var(--accent);border-color:var(--accent)">loop cerrado</span>
+    </div>
+  </section>
+
+  <!-- 5 · CÓMO FUNCIONA -->
+  <section class="slide">
+    <span class="eyebrow">Cómo funciona por dentro</span>
+    <h2>Cuatro piezas que nadie más combina</h2>
+    <div class="pieces">
+      <div class="piece"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div><div><h3>Evaluador propio</h3><p>Oráculo portátil en TypeScript: ALLOW/DENY sin Java ni emulador. Corre en CI y en el navegador.</p></div></div>
+      <div class="piece"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h12l4 4v12H4z"/><path d="M8 12h8M8 16h5"/></svg></div><div><h3>RAG de tu código</h3><p>Sabe que <code>/pagos</code> guarda tarjetas. Nombra el PII concreto que se filtra.</p></div></div>
+      <div class="piece"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l9 5-9 5-9-5z"/><path d="M3 12l9 5 9-5"/></svg></div><div><h3>LLM propone, evaluador dispone</h3><p>El modelo redacta el fix; solo se acepta si el atacante queda en DENY. Cero alucinaciones.</p></div></div>
+      <div class="piece"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></div><div><h3>Servidor MCP</h3><p>Vive dentro de Cursor, Kiro y Claude. Revisa la seguridad mientras programas.</p></div></div>
+    </div>
+    <div class="chips"><span class="chip fs">Firestore</span><span class="chip rt">Realtime Database</span><span class="chip sb">Supabase</span></div>
+  </section>
+
+  <!-- 6 · LA PRUEBA -->
+  <section class="slide">
+    <span class="eyebrow">La prueba</span>
+    <h2>No es una advertencia: es la <span class="red">prueba</span>.</h2>
+    <div class="grid2">
+      <div class="card bad">
+        <h3 class="red">Datos exfiltrados en vivo</h3>
+        <dl class="record">
+          <dt>nombre</dt><dd class="pii">Alice Pérez</dd>
+          <dt>cédula</dt><dd class="pii">1.032.456.789</dd>
+          <dt>diagnóstico</dt><dd class="pii">Diabetes tipo 2</dd>
+          <dt>tarjeta</dt><dd class="pii">4111 1111 1111 1111 · CVV 321</dd>
+        </dl>
+      </div>
+      <div>
+        <div class="card"><h3>El fix, validado por IA</h3><p>Reglas de mínimo privilegio acotadas al dueño. El LLM (OpenAI) propone, el evaluador valida. Etiqueta: <b>llm-validado</b>.</p></div>
+        <div class="verify">Verificado: con el fix, el atacante anónimo <b>y</b> cualquier usuario ajeno quedan bloqueados.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · VS MERCADO -->
+  <section class="slide">
+    <span class="eyebrow">Frente al mercado</span>
+    <h2>Todos detectan la puerta abierta.<br>Solo FUGA prueba quién entra.</h2>
+    <table class="cmp">
+      <thead><tr><th>Capacidad</th><th class="c">Otros</th><th class="c">FUGA</th></tr></thead>
+      <tbody>
+        <tr class="star"><td><b>Prueba la fuga ENTRE USUARIOS (IDOR)</b></td><td class="c"><svg viewBox="0 0 20 20" fill="none" stroke="#C4CCD8" stroke-width="2" stroke-linecap="round" style="width:15px;height:15px"><path d="M5 5l10 10M15 5L5 15"/></svg></td><td class="c"><svg viewBox="0 0 20 20" fill="none" stroke="#0FA968" stroke-width="2.5" stroke-linecap="round" style="width:18px;height:18px"><path d="M4 10l4 4 8-8"/></svg></td></tr>
+        <tr><td>Muestra los datos exfiltrados</td><td class="c"><svg viewBox="0 0 20 20" fill="none" stroke="#C4CCD8" stroke-width="2" stroke-linecap="round" style="width:15px;height:15px"><path d="M5 5l10 10M15 5L5 15"/></svg></td><td class="c"><svg viewBox="0 0 20 20" fill="none" stroke="#0FA968" stroke-width="2.5" stroke-linecap="round" style="width:18px;height:18px"><path d="M4 10l4 4 8-8"/></svg></td></tr>
+        <tr><td>Re-verifica el fix (loop cerrado)</td><td class="c"><svg viewBox="0 0 20 20" fill="none" stroke="#C4CCD8" stroke-width="2" stroke-linecap="round" style="width:15px;height:15px"><path d="M5 5l10 10M15 5L5 15"/></svg></td><td class="c"><svg viewBox="0 0 20 20" fill="none" stroke="#0FA968" stroke-width="2.5" stroke-linecap="round" style="width:18px;height:18px"><path d="M4 10l4 4 8-8"/></svg></td></tr>
+        <tr><td>Vive en tu editor (MCP)</td><td class="c"><svg viewBox="0 0 20 20" fill="none" stroke="#C4CCD8" stroke-width="2" stroke-linecap="round" style="width:15px;height:15px"><path d="M5 5l10 10M15 5L5 15"/></svg></td><td class="c"><svg viewBox="0 0 20 20" fill="none" stroke="#0FA968" stroke-width="2.5" stroke-linecap="round" style="width:18px;height:18px"><path d="M4 10l4 4 8-8"/></svg></td></tr>
+        <tr><td>Corre en CI sin backend ni Java</td><td class="c"><svg viewBox="0 0 20 20" fill="none" stroke="#C4CCD8" stroke-width="2" stroke-linecap="round" style="width:15px;height:15px"><path d="M5 5l10 10M15 5L5 15"/></svg></td><td class="c"><svg viewBox="0 0 20 20" fill="none" stroke="#0FA968" stroke-width="2.5" stroke-linecap="round" style="width:18px;height:18px"><path d="M4 10l4 4 8-8"/></svg></td></tr>
+        <tr><td>Detecta acceso abierto · escaneo por URL</td><td class="c"><svg viewBox="0 0 20 20" fill="none" stroke="#0FA968" stroke-width="2.5" stroke-linecap="round" style="width:18px;height:18px"><path d="M4 10l4 4 8-8"/></svg></td><td class="c"><svg viewBox="0 0 20 20" fill="none" stroke="#0FA968" stroke-width="2.5" stroke-linecap="round" style="width:18px;height:18px"><path d="M4 10l4 4 8-8"/></svg></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 8 · CONSTRUIDO CON -->
+  <section class="slide">
+    <span class="eyebrow">Construido con</span>
+    <h2>Kiro, en la nube, y abierto</h2>
+    <div class="built">
+      <div class="b"><b>Kiro</b><span>Flujo spec-driven: specs, steering, agente <code>fuga-auditor</code> y hooks.</span></div>
+      <div class="b"><b>OpenAI · Bedrock</b><span>Motor LLM intercambiable. También Ollama local o plantilla sin claves.</span></div>
+      <div class="b"><b>MCP</b><span><code>fuga_audit</code>, <code>fuga_prove</code>, <code>fuga_fix</code> para agentes de IA.</span></div>
+      <div class="b"><b>Open source</b><span>Licencia MIT · monorepo · 26 tests en verde.</span></div>
+    </div>
+    <p class="lead" style="margin-top:22px;max-width:50ch">El agente <code>fuga-auditor</code> de Kiro auditó FUGA de punta a punta — y encontró bugs reales que corregimos.</p>
+  </section>
+
+  <!-- 9 · CIERRE -->
+  <section class="slide cover">
+    <div class="brand"><svg viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#5B3DF5"/><path d="M8 10h16M8 16h12M8 22h8" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><circle cx="24" cy="22" r="4" fill="#E5322D"/><path d="M22.5 22l1.5 1.5 2-2" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>FUGA</span></div>
+    <h2 style="max-width:20ch">De «no sabía que Mallory veía a mis pacientes» a <span class="accent">probado, reparado y verificado.</span></h2>
+    <p class="lead" style="max-width:44ch">El único que prueba que un usuario lee los datos de otro. Demo en vivo, código abierto.</p>
+    <div class="foot-urls"><b>fuga-two.vercel.app</b> · github.com/JuanMCanchala/fuga · Gracias.</div>
+  </section>
+
+</div>
+
+<div class="dots" id="dots"></div>
+<div class="counter" id="counter">1 / 9</div>
+<div class="hint">Flechas o espacio para navegar · F para pantalla completa</div>
+<div class="nav">
+  <button id="prev" aria-label="Anterior"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 4l-5 6 5 6"/></svg></button>
+  <button id="next" aria-label="Siguiente"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 4l5 6-5 6"/></svg></button>
+</div>
+
+<script>
+const slides = Array.from(document.querySelectorAll('.slide'));
+const dotsBox = document.getElementById('dots');
+const counter = document.getElementById('counter');
+const progress = document.getElementById('progress');
+let i = 0;
+slides.forEach((_, k) => {
+  const d = document.createElement('button');
+  d.className = 'dot' + (k === 0 ? ' on' : '');
+  d.setAttribute('aria-label', 'Ir a la diapositiva ' + (k + 1));
+  d.onclick = () => go(k);
+  dotsBox.appendChild(d);
+});
+const dots = Array.from(dotsBox.children);
+function go(n) {
+  i = Math.max(0, Math.min(slides.length - 1, n));
+  slides.forEach((s, k) => s.classList.toggle('active', k === i));
+  dots.forEach((d, k) => d.classList.toggle('on', k === i));
+  counter.textContent = (i + 1) + ' / ' + slides.length;
+  progress.style.width = ((i + 1) / slides.length * 100) + '%';
+  if (location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+}
+function next() { go(i + 1); }
+function prev() { go(i - 1); }
+document.getElementById('next').onclick = next;
+document.getElementById('prev').onclick = prev;
+document.addEventListener('keydown', e => {
+  if (['ArrowRight', ' ', 'PageDown', 'ArrowDown'].includes(e.key)) { e.preventDefault(); next(); }
+  else if (['ArrowLeft', 'PageUp', 'ArrowUp'].includes(e.key)) { e.preventDefault(); prev(); }
+  else if (e.key === 'Home') go(0);
+  else if (e.key === 'End') go(slides.length - 1);
+  else if (e.key === 'f' || e.key === 'F') { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
+});
+// swipe en móvil
+let x0 = null;
+addEventListener('touchstart', e => x0 = e.touches[0].clientX, { passive: true });
+addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) (dx < 0 ? next : prev)(); x0 = null; }, { passive: true });
+progress.style.width = (1 / slides.length * 100) + '%';
+const start = parseInt((location.hash || '').slice(1), 10);
+if (start >= 1 && start <= slides.length) go(start - 1);
+</script>
+</body>
+</html>
