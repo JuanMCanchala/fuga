@@ -13,7 +13,7 @@
 :root{
 --bg:#F6F8FC;--surface:#FFFFFF;--border:#E4E9F2;--ink:#111725;--muted:#5B6675;
 --accent:#5B3DF5;--accent-light:#EEF0FE;
---critical:#E5322D;--high:#F59E0B;--medium:#EAB308;--low:#64748B;--ok:#0FA968;
+--critical:#E5322D;--high:#F59E0B;--medium:#EAB308;--low:#64748B;--ok:#0FA968;--danger:#E5322D;
 --firestore:#6D3BEB;--rtdb:#0EA5E9;--supabase:#EC4899;
 --radius:14px;--radius-sm:8px;
 --shadow:0 1px 3px rgba(0,0,0,.04),0 4px 12px rgba(0,0,0,.06);
@@ -55,6 +55,39 @@ code,pre{font-family:var(--font-mono);font-size:.88rem}
 .login-demo:hover{text-decoration:underline}
 .login-value{position:absolute;left:0;top:0;width:50%;height:100%;display:flex;flex-direction:column;justify-content:center;padding:48px;background:linear-gradient(135deg,#5B3DF5 0%,#3B1FC5 100%);color:#fff;border-radius:var(--radius) 0 0 var(--radius)}
 @media(max-width:900px){.login-value{display:none}}
+/* ── Auth (Supabase) ── */
+.login-wrap{min-height:100vh;display:grid;grid-template-columns:1.05fr 1fr}
+@media(max-width:920px){.login-wrap{grid-template-columns:1fr}}
+.login-hero{background:linear-gradient(150deg,#5B3DF5 0%,#3B1FC5 58%,#2A128F 100%);color:#fff;padding:56px 52px;display:flex;flex-direction:column;justify-content:center;gap:22px;position:relative;overflow:hidden}
+.login-hero::after{content:'';position:absolute;right:-90px;bottom:-90px;width:320px;height:320px;border-radius:50%;background:rgba(255,255,255,.07)}
+@media(max-width:920px){.login-hero{display:none}}
+.login-hero-logo{display:flex;align-items:center;gap:10px}
+.login-hero-logo svg{width:30px;height:30px}
+.login-hero-logo span{font-family:var(--font-title);font-weight:700;font-size:1.35rem;letter-spacing:-.01em}
+.login-hero h1{font-family:var(--font-title);font-size:2.1rem;line-height:1.18;font-weight:700;max-width:15ch}
+.login-hero .lead{opacity:.88;font-size:1rem;line-height:1.6;max-width:36ch}
+.login-hero ul{list-style:none;display:flex;flex-direction:column;gap:13px;margin-top:4px;position:relative;z-index:1}
+.login-hero li{display:flex;gap:11px;align-items:flex-start;font-size:.92rem;line-height:1.45;opacity:.94}
+.login-hero li svg{width:18px;height:18px;flex:none;margin-top:1px}
+.login-panel{display:flex;align-items:center;justify-content:center;padding:40px 24px;background:var(--surface)}
+.login-inner{width:100%;max-width:390px}
+.auth-tabs{display:flex;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px;margin-bottom:22px}
+.auth-tab{flex:1;padding:8px;font-size:.86rem;font-weight:600;color:var(--muted);border-radius:8px;transition:background .15s,color .15s}
+.auth-tab.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(17,23,37,.09)}
+.auth-alert{display:none;padding:10px 13px;border-radius:var(--radius-sm);font-size:.83rem;line-height:1.5;margin-bottom:15px}
+.auth-alert.show{display:block}
+.auth-alert.err{background:#FEF2F2;border:1px solid #FCA5A5;color:#991B1B}
+.auth-alert.ok{background:#ECFDF5;border:1px solid #6EE7B7;color:#065F46}
+.auth-alt{display:block;width:100%;text-align:center;margin-top:12px;font-size:.84rem;color:var(--accent);font-weight:500}
+.auth-alt:hover{text-decoration:underline}
+.auth-powered{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:22px;padding-top:18px;border-top:1px solid var(--border);font-size:.74rem;color:var(--muted)}
+.auth-powered b{color:#3ECF8E;font-weight:600}
+.auth-powered svg{width:14px;height:14px;flex:none}
+button[disabled]{opacity:.6;cursor:not-allowed}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:fspin .6s linear infinite;vertical-align:-2px;margin-right:7px}
+.btn-social .spin{border-color:rgba(91,61,245,.25);border-top-color:var(--accent)}
+@keyframes fspin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}}
 
 /* APP SHELL */
 .app-shell{display:grid;grid-template-columns:240px 1fr;grid-template-rows:56px 1fr;min-height:100vh}
@@ -241,6 +274,7 @@ code,pre{font-family:var(--font-mono);font-size:.88rem}
 </head>
 <body>
 <div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════
 // FUGA SaaS App — Single File Application
@@ -271,6 +305,47 @@ const ICONS = {
   trash: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1M6 7v5M8 7v5M10 7v5"/><path d="M4 4l.5 9a1.5 1.5 0 001.5 1.5h4a1.5 1.5 0 001.5-1.5L12 4"/></svg>`,
   x: `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l8 8M12 4l-8 8"/></svg>`,
 };
+
+// ═══ SUPABASE AUTH ═══
+// La anon key es pública por diseño: sin RLS no abre nada. FUGA la muestra
+// precisamente porque el riesgo nunca está en la key, está en las políticas.
+const SUPABASE_URL = 'https://pesycpsogohesixydgoi.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlc3ljcHNvZ29oZXNpeHlkZ29pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0NzkwNjcsImV4cCI6MjA4OTA1NTA2N30.CllYh1Y8kP3a3w2jHoO_H04nJJbO5erZ4wycjerbb9s';
+
+let sb = null;
+try {
+  if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase && window.supabase.createClient) {
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'fuga-auth' }
+    });
+  }
+} catch (e) { sb = null; }
+
+// Traduce el error crudo de Supabase a algo que un vibe coder entienda.
+function authError(err) {
+  const m = ((err && (err.message || err.error_description)) || '').toLowerCase();
+  if (m.includes('invalid login')) return 'Email o contraseña incorrectos. ¿Todavía no tienes cuenta? Crea una o entra en modo demo.';
+  if (m.includes('email not confirmed')) return 'Tu cuenta existe pero falta confirmar el correo. Revisa tu bandeja (y spam).';
+  if (m.includes('already registered') || m.includes('already been registered')) return 'Ese email ya tiene cuenta. Cambia a "Iniciar sesión".';
+  if (m.includes('password') && m.includes('6')) return 'La contraseña necesita al menos 6 caracteres.';
+  if (m.includes('rate limit') || m.includes('too many')) return 'Demasiados intentos seguidos. Espera un minuto e inténtalo de nuevo.';
+  if (m.includes('provider is not enabled') || m.includes('unsupported provider')) return 'Ese proveedor no está habilitado en el proyecto de Supabase. Actívalo en Authentication → Providers, o entra con email.';
+  if (m.includes('redirect')) return 'Falta autorizar esta URL en Supabase (Authentication → URL Configuration → Redirect URLs).';
+  if (m.includes('fetch') || m.includes('network')) return 'No pudimos contactar a Supabase. Revisa tu conexión o entra en modo demo.';
+  return (err && err.message) ? err.message : 'Algo falló al autenticar. Inténtalo de nuevo o entra en modo demo.';
+}
+
+function sessionFromSupabase(s) {
+  const u = s.user || {};
+  const meta = u.user_metadata || {};
+  return {
+    id: u.id,
+    email: u.email || '',
+    name: meta.full_name || meta.name || meta.user_name || (u.email || 'Usuario').split('@')[0],
+    provider: 'supabase',
+    via: (u.app_metadata && u.app_metadata.provider) || 'email',
+  };
+}
 
 // STATE
 let state = {
@@ -410,37 +485,156 @@ function copyText(text, btn) {
 
 // ═══ LOGIN VIEW ═══
 function renderLogin() {
-  return `<div class="login-page">
-    <div class="login-card">
+  return `<div class="login-wrap">
+    <section class="login-hero">
+      <div class="login-hero-logo">${ICONS.logo}<span>FUGA</span></div>
+      <h1>Prueba, repara y verifica fugas de datos.</h1>
+      <p class="lead">Hecho para quien construye con IA. Pega tus reglas y te mostramos exactamente qué datos se están filtrando ahora mismo.</p>
+      <ul>
+        <li>${ICONS.check}<span><b>No opina: demuestra.</b> Lanza un atacante anónimo y te enseña los registros que se exfiltran.</span></li>
+        <li>${ICONS.check}<span><b>Te da el arreglo.</b> Reglas endurecidas, listas para copiar y pegar.</span></li>
+        <li>${ICONS.check}<span><b>Y lo verifica.</b> Vuelve a atacar con el fix puesto para confirmar que la fuga cerró.</span></li>
+        <li>${ICONS.check}<span>Firestore, Realtime Database y Supabase.</span></li>
+      </ul>
+    </section>
+    <section class="login-panel"><div class="login-inner">
       <div class="login-logo">${ICONS.logo}<span>FUGA</span></div>
-      <p class="login-title">Entra a tu consola de seguridad</p>
-      <form id="login-form">
-        <div class="login-field"><label for="login-email">Email</label><input type="email" id="login-email" placeholder="tu@email.com" required></div>
-        <div class="login-field"><label for="login-pass">Contraseña</label><input type="password" id="login-pass" placeholder="••••••••" required></div>
-        <button type="submit" class="btn-primary">Iniciar sesión</button>
+      <p class="login-title" id="auth-title">Entra a tu consola de seguridad</p>
+      <div class="auth-tabs" role="tablist">
+        <button class="auth-tab active" data-tab="signin" role="tab" aria-selected="true">Iniciar sesión</button>
+        <button class="auth-tab" data-tab="signup" role="tab" aria-selected="false">Crear cuenta</button>
+      </div>
+      <div class="auth-alert" id="auth-msg" role="status" aria-live="polite"></div>
+      <form id="login-form" novalidate>
+        <div class="login-field"><label for="login-email">Email</label><input type="email" id="login-email" autocomplete="email" placeholder="tu@email.com" required></div>
+        <div class="login-field"><label for="login-pass">Contraseña</label><input type="password" id="login-pass" autocomplete="current-password" placeholder="Mínimo 6 caracteres" required></div>
+        <button type="submit" class="btn-primary" id="auth-submit">Iniciar sesión</button>
       </form>
+      <a href="#" class="auth-alt" id="btn-magic">Prefiero un enlace mágico por correo</a>
       <div class="login-divider">o continúa con</div>
       <button class="btn-social" id="btn-github">${ICONS.github} Continuar con GitHub</button>
       <button class="btn-social" id="btn-google">${ICONS.google} Continuar con Google</button>
-      <a href="#" class="login-demo" id="btn-demo">Entrar en modo demo</a>
-    </div>
+      <a href="#" class="login-demo" id="btn-demo">Entrar en modo demo (sin cuenta)</a>
+      <div class="auth-powered">${sb
+        ? ICONS.shield + '<span>Sesión real, cifrada con <b>Supabase Auth</b></span>'
+        : ICONS.alert + '<span>Supabase no está disponible — entra en modo demo</span>'}</div>
+    </div></section>
   </div>`;
 }
 
 function bindLogin() {
-  const form = document.getElementById('login-form');
-  const doLogin = (email, name) => {
-    state.session = { email, name };
-    saveSession();
-    render();
+  let tab = 'signin';
+  const msgEl = document.getElementById('auth-msg');
+  const submit = document.getElementById('auth-submit');
+  const emailEl = document.getElementById('login-email');
+  const passEl = document.getElementById('login-pass');
+  const titleEl = document.getElementById('auth-title');
+
+  const say = (text, type) => { if (msgEl) { msgEl.className = 'auth-alert show ' + (type || 'err'); msgEl.textContent = text; } };
+  const clear = () => { if (msgEl) { msgEl.className = 'auth-alert'; msgEl.textContent = ''; } };
+  const lock = (btn, on, label) => {
+    if (!btn) return;
+    if (on) { btn.dataset.orig = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spin"></span>' + label; }
+    else { btn.disabled = false; if (btn.dataset.orig) btn.innerHTML = btn.dataset.orig; }
   };
-  if (form) form.onsubmit = e => { e.preventDefault(); const em = document.getElementById('login-email').value; doLogin(em, em.split('@')[0]); };
-  const gh = document.getElementById('btn-github');
-  if (gh) gh.onclick = () => doLogin('dev@github.com', 'Dev GitHub');
-  const go = document.getElementById('btn-google');
-  if (go) go.onclick = () => doLogin('dev@gmail.com', 'Dev Google');
+  const enterDemo = () => {
+    state.session = { email: 'demo@fuga.dev', name: 'Usuario Demo', provider: 'demo' };
+    saveSession(); render();
+  };
+
+  // OAuth devuelve los errores en el fragmento de la URL.
+  if (window.location.hash && window.location.hash.indexOf('error') !== -1) {
+    const p = new URLSearchParams(window.location.hash.slice(1));
+    const d = p.get('error_description') || p.get('error');
+    if (d) say(authError({ message: decodeURIComponent(d.replace(/\+/g, ' ')) }));
+    history.replaceState(null, '', window.location.pathname);
+  }
+
+  document.querySelectorAll('.auth-tab').forEach(t => t.onclick = () => {
+    tab = t.dataset.tab;
+    document.querySelectorAll('.auth-tab').forEach(x => {
+      const on = x === t;
+      x.classList.toggle('active', on);
+      x.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    submit.textContent = tab === 'signup' ? 'Crear cuenta' : 'Iniciar sesión';
+    titleEl.textContent = tab === 'signup' ? 'Crea tu cuenta de FUGA' : 'Entra a tu consola de seguridad';
+    passEl.autocomplete = tab === 'signup' ? 'new-password' : 'current-password';
+    clear();
+  });
+
+  const form = document.getElementById('login-form');
+  if (form) form.onsubmit = async e => {
+    e.preventDefault(); clear();
+    const email = (emailEl.value || '').trim();
+    const pass = passEl.value || '';
+    if (!email || !pass) return say('Escribe tu email y tu contraseña.');
+    if (!sb) { say('Supabase no responde ahora mismo. Te llevamos al modo demo…', 'ok'); return setTimeout(enterDemo, 900); }
+    lock(submit, true, tab === 'signup' ? 'Creando cuenta…' : 'Entrando…');
+    try {
+      if (tab === 'signup') {
+        const { data, error } = await sb.auth.signUp({ email, password: pass, options: { emailRedirectTo: window.location.origin + '/app.html' } });
+        if (error) throw error;
+        if (!(data && data.session)) say('Cuenta creada. Te mandamos un correo de confirmación: ábrelo y vuelve aquí.', 'ok');
+      } else {
+        const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+        if (error) throw error;
+      }
+      // Si hay sesión, onAuthStateChange entra a la consola.
+    } catch (err) { say(authError(err)); }
+    lock(submit, false);
+  };
+
+  const magic = document.getElementById('btn-magic');
+  if (magic) magic.onclick = async e => {
+    e.preventDefault(); clear();
+    const email = (emailEl.value || '').trim();
+    if (!email) { emailEl.focus(); return say('Escribe tu email arriba y te mandamos el enlace.'); }
+    if (!sb) return say('Supabase no responde ahora mismo. Entra en modo demo.');
+    say('Enviando el enlace…', 'ok');
+    try {
+      const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin + '/app.html' } });
+      if (error) throw error;
+      say('Listo. Revisa tu correo (mira también spam) y abre el enlace para entrar.', 'ok');
+    } catch (err) { say(authError(err)); }
+  };
+
+  const oauth = (btn, provider) => {
+    if (!btn) return;
+    btn.onclick = async () => {
+      clear();
+      if (!sb) return say('Supabase no responde ahora mismo. Entra en modo demo.');
+      lock(btn, true, 'Redirigiendo…');
+      try {
+        const { error } = await sb.auth.signInWithOAuth({ provider, options: { redirectTo: window.location.origin + '/app.html' } });
+        if (error) throw error;
+      } catch (err) { say(authError(err)); lock(btn, false); }
+    };
+  };
+  oauth(document.getElementById('btn-github'), 'github');
+  oauth(document.getElementById('btn-google'), 'google');
+
+  // Preguntamos al proyecto qué proveedores están realmente activos para no
+  // dejar botones muertos: si GitHub/Google están apagados, se deshabilitan.
+  if (sb) {
+    fetch(SUPABASE_URL + '/auth/v1/settings', { headers: { apikey: SUPABASE_ANON_KEY } })
+      .then(r => r.json())
+      .then(cfg => {
+        const ext = (cfg && cfg.external) || {};
+        [['btn-github', 'github', 'GitHub'], ['btn-google', 'google', 'Google']].forEach(p => {
+          if (ext[p[1]]) return;
+          const b = document.getElementById(p[0]);
+          if (!b) return;
+          b.disabled = true;
+          b.title = p[2] + ' no está habilitado en este proyecto de Supabase (Authentication → Providers).';
+          b.insertAdjacentHTML('beforeend', '<span style="font-size:.72rem;color:var(--muted);font-weight:400">no habilitado</span>');
+        });
+      })
+      .catch(() => { /* si no podemos preguntar, dejamos los botones y el error explica */ });
+  }
+
   const demo = document.getElementById('btn-demo');
-  if (demo) demo.onclick = e => { e.preventDefault(); doLogin('demo@fuga.dev', 'Usuario Demo'); };
+  if (demo) demo.onclick = e => { e.preventDefault(); enterDemo(); };
 }
 
 // ═══ APP SHELL ═══
@@ -486,7 +680,13 @@ function bindShell() {
   if (avatarBtn) avatarBtn.onclick = () => dd.classList.toggle('show');
   document.addEventListener('click', e => { if (dd && !dd.parentElement.contains(e.target)) dd.classList.remove('show'); });
   const logout = document.getElementById('btn-logout');
-  if (logout) logout.onclick = () => { state.session = null; localStorage.removeItem('fuga_session'); render(); };
+  if (logout) logout.onclick = async () => {
+    const wasCloud = state.session && state.session.provider === 'supabase';
+    state.session = null; state.view = 'dashboard';
+    localStorage.removeItem('fuga_session');
+    render();
+    if (sb && wasCloud) { try { await sb.auth.signOut(); } catch (e) { /* la sesión local ya se cerró */ } }
+  };
   const mobileBtn = document.getElementById('mobile-toggle');
   const sidebar = document.getElementById('sidebar');
   if (mobileBtn) mobileBtn.onclick = () => sidebar.classList.toggle('open');
@@ -850,7 +1050,12 @@ function bindIntegrations(){ document.querySelectorAll('[data-copy]').forEach(b=
 // ═══ CONFIGURACIÓN ═══
 function renderSettings(){
   const s=state.session||{};
+  const cloud=s.provider==='supabase';
+  const via={github:'GitHub',google:'Google',email:'email y contraseña'}[s.via]||'email';
   return `<div class="settings-section card"><div class="card-title">Perfil</div><p style="margin:0"><strong>${escapeHtml(s.name||'Usuario')}</strong><br><span style="color:var(--muted)">${escapeHtml(s.email||'')}</span></p></div>
+  <div class="settings-section card"><div class="card-title">Sesión</div>${cloud
+    ? `<p style="margin:0 0 10px"><span class="badge badge-supabase">Supabase Auth</span> Sesión real, iniciada con ${via}. Tu token se refresca solo y viaja cifrado.</p><p style="color:var(--muted);margin:0;font-size:.85rem">ID de usuario: <code style="font-family:'JetBrains Mono',monospace">${escapeHtml(s.id||'—')}</code></p>`
+    : `<p style="margin:0 0 10px"><span class="badge badge-medium">Modo demo</span> Estás explorando sin cuenta. Tus escaneos viven solo en este navegador.</p><button class="btn-primary" id="to-login" style="width:auto;padding:9px 18px">Crear una cuenta real</button>`}</div>
   <div class="settings-section card"><div class="card-title">Plan</div><p>Estás en el plan <strong>Free</strong>. Pro añade monitoreo continuo, alertas por email y escaneo en CI.</p><button class="btn-primary">Mejorar a Pro</button></div>
   <div class="settings-section card"><div class="card-title">Notificaciones</div><label style="display:block;margin:.4rem 0"><input type="checkbox" checked> Alertas por email cuando aparece una fuga</label><label style="display:block;margin:.4rem 0"><input type="checkbox"> Resumen semanal de seguridad</label></div>
   <div class="settings-section card"><div class="card-title">API key</div><pre class="code-block" id="apikey">fuga_sk_live_51H8xSECRETxxxxxxxx</pre><button class="btn-copy" data-copy2="apikey">${ICONS.copy} Copiar</button></div>
@@ -858,11 +1063,41 @@ function renderSettings(){
 }
 function bindSettings(){
   const w=document.getElementById('wipe'); if(w) w.onclick=()=>{ if(confirm('¿Borrar todos tus proyectos?')){ localStorage.removeItem('fuga_projects'); state.projects=[]; render(); } };
+  const tl=document.getElementById('to-login'); if(tl) tl.onclick=()=>{ state.session=null; localStorage.removeItem('fuga_session'); render(); };
   document.querySelectorAll('[data-copy2]').forEach(b=>b.onclick=()=>{const el=document.getElementById(b.dataset.copy2); if(el) copyText(el.textContent);});
 }
 
 // ═══ ARRANQUE ═══
-render();
+async function boot() {
+  if (sb) {
+    try {
+      const { data } = await sb.auth.getSession();
+      if (data && data.session) {
+        state.session = sessionFromSupabase(data.session);
+        saveSession();
+      } else if (state.session && state.session.provider === 'supabase') {
+        // La sesión de Supabase caducó: no la arrastramos desde localStorage.
+        state.session = null;
+        localStorage.removeItem('fuga_session');
+      }
+      sb.auth.onAuthStateChange((event, s) => {
+        if (s && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')) {
+          const next = sessionFromSupabase(s);
+          const same = state.session && state.session.provider === 'supabase' && state.session.email === next.email;
+          state.session = next;
+          saveSession();
+          if (!same) { state.view = 'dashboard'; render(); }
+        } else if (event === 'SIGNED_OUT' && state.session && state.session.provider === 'supabase') {
+          state.session = null;
+          localStorage.removeItem('fuga_session');
+          render();
+        }
+      });
+    } catch (e) { /* sin nube: la consola sigue funcionando en local */ }
+  }
+  render();
+}
+boot();
 </script>
 </body>
 </html>
