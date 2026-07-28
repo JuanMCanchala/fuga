@@ -11,7 +11,8 @@ import { synthSeed } from './prove/seed';
 import { classifyFieldByLexicon, collectionSensitivity } from './rag/schema';
 import { parseRtdbRules, analyzeRtdb, proveRtdb } from './rtdb/engine';
 import { parseSupabase, proveSupabase } from './supabase/engine';
-import { detectBackend } from './backends';
+import { detectBackend, runFuga } from './backends';
+import { proveCrossTenantFirestore, proveCrossTenantSupabase } from './prove/multitenant';
 
 const IF_TRUE = `rules_version = '2';
 service cloud.firestore {
@@ -175,4 +176,70 @@ test('detectBackend: distingue firestore, rtdb y supabase', () => {
   assert.equal(detectBackend('rules_version = "2"; service cloud.firestore {}'), 'firestore');
   assert.equal(detectBackend('{"rules":{".read":true}}'), 'rtdb');
   assert.equal(detectBackend('create table x (id uuid); alter table x enable row level security;'), 'supabase');
+});
+
+// --- Fuga ENTRE USUARIOS (IDOR / cross-tenant): el diferenciador ---
+
+// Regla clásica de vibe coder: exige login, pero NO comprueba el dueño.
+const AUTHED_NOT_OWNER = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /perfiles/{userId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}`;
+
+// Regla correcta: acotada al dueño por el id del path.
+const OWNER_SCOPED = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /perfiles/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}`;
+
+test('cross-tenant firestore: "auth != null" es fuga entre usuarios probada', () => {
+  const rep = proveCrossTenantFirestore(parseRules(AUTHED_NOT_OWNER));
+  assert.equal(rep.clean, false);
+  assert.ok(rep.leaks.some((l) => l.collection === 'perfiles' && l.method === 'read'));
+  assert.ok(rep.leaks.some((l) => l.collection === 'perfiles' && l.method === 'write'));
+});
+
+test('cross-tenant firestore: regla acotada al dueño NO es fuga', () => {
+  const rep = proveCrossTenantFirestore(parseRules(OWNER_SCOPED));
+  assert.equal(rep.clean, true);
+});
+
+test('cross-tenant firestore: lo que ya es público NO se cuenta como entre-usuarios', () => {
+  // if true => el anónimo ya entra; es fuga pública, no cross-tenant.
+  const rep = proveCrossTenantFirestore(parseRules(IF_TRUE));
+  assert.equal(rep.clean, true);
+});
+
+test('cross-tenant supabase: policy "authenticated" sin dueño es fuga entre usuarios', () => {
+  const sql =
+    'create table pagos (id uuid, user_id uuid, numeroTarjeta text);\n' +
+    'alter table pagos enable row level security;\n' +
+    "create policy p on pagos for select to authenticated using (true);";
+  const rep = proveCrossTenantSupabase(parseSupabase(sql));
+  assert.equal(rep.clean, false);
+  assert.ok(rep.leaks.some((l) => l.collection === 'pagos' && l.method === 'read'));
+});
+
+test('cross-tenant supabase: policy con auth.uid() = user_id NO es fuga', () => {
+  const sql =
+    'create table pagos (id uuid, user_id uuid);\n' +
+    'alter table pagos enable row level security;\n' +
+    "create policy own on pagos for select to authenticated using (auth.uid() = user_id);";
+  const rep = proveCrossTenantSupabase(parseSupabase(sql));
+  assert.equal(rep.clean, true);
+});
+
+test('runFuga: reporta cross-tenant y el fix lo cierra (loop cerrado)', async () => {
+  const res = await runFuga({ rules: AUTHED_NOT_OWNER });
+  assert.ok(res.crossTenant.length >= 1, 'debe probar la fuga entre usuarios');
+  assert.ok(res.scan.findings.some((f) => f.code === 'FUGA-IDOR-READ'));
+  assert.equal(res.verify.clean, true, 'el fix debe cerrar también la fuga entre usuarios');
 });

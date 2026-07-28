@@ -61,8 +61,10 @@ export function templateRules(collections: string[], ownerField: string): string
       if (isUsers) {
         return [
           `    match /${c}/{userId} {`,
-          `      // El usuario solo accede a su propio documento.`,
-          `      allow read: if request.auth != null;`,
+          `      // El usuario solo accede a SU propio documento (evita fuga entre usuarios).`,
+          `      // Si tu app necesita perfiles visibles entre usuarios logueados, abre la`,
+          `      // lectura conscientemente: allow read: if request.auth != null;`,
+          `      allow read: if request.auth != null && request.auth.uid == userId;`,
           `      allow write: if request.auth != null && request.auth.uid == userId;`,
           `    }`,
         ].join('\n');
@@ -96,9 +98,30 @@ export function templateRules(collections: string[], ownerField: string): string
 
 /** Tests basados en el evaluador portátil (corren sin Java). */
 export function templateTests(collections: string[], ownerField: string): string {
-  const cases = collections
-    .map(
-      (c) => `  // Colección "${c}"
+  const caseFor = (c: string): string => {
+    const isUsers = /^(users|usuarios|profiles|perfiles)$/i.test(c);
+    // En colecciones de usuario el id del documento ES el uid; en el resto la
+    // propiedad va en un campo del documento. El tercer caso ("otro usuario")
+    // es el que prueba que NO hay fuga entre usuarios (IDOR).
+    if (isUsers) {
+      return `  // Colección "${c}" (documento por usuario)
+  {
+    name: 'anónimo NO puede leer ${c}',
+    req: { path: '/${c}/alice', method: 'get', auth: null },
+    expect: 'DENY',
+  },
+  {
+    name: 'dueño SÍ puede leer su ${c}',
+    req: { path: '/${c}/alice', method: 'get', auth: { uid: 'alice' } },
+    expect: 'ALLOW',
+  },
+  {
+    name: 'otro usuario NO puede leer el ${c} ajeno (sin fuga entre usuarios)',
+    req: { path: '/${c}/alice', method: 'get', auth: { uid: 'mallory' } },
+    expect: 'DENY',
+  },`;
+    }
+    return `  // Colección "${c}"
   {
     name: 'anónimo NO puede leer ${c}',
     req: { path: '/${c}/doc1', method: 'get', auth: null, resource: { ${ownerField}: 'alice' } },
@@ -110,12 +133,12 @@ export function templateTests(collections: string[], ownerField: string): string
     expect: 'ALLOW',
   },
   {
-    name: 'otro usuario NO puede leer ${c}',
+    name: 'otro usuario NO puede leer ${c} ajeno (sin fuga entre usuarios)',
     req: { path: '/${c}/doc1', method: 'get', auth: { uid: 'mallory' }, resource: { ${ownerField}: 'alice' } },
     expect: 'DENY',
-  },`,
-    )
-    .join('\n');
+  },`;
+  };
+  const cases = collections.map(caseFor).join('\n');
 
   return `/**
  * Tests de regresión generados por FUGA. Corren con el evaluador portátil de

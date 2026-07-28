@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       backend: body.backend,
     });
 
-    // Forma compatible con el command center (+ backend y targets).
+    // Forma compatible con el command center (+ backend, targets y cross-tenant).
     return NextResponse.json({
       backend: result.backend,
       llm: result.llm,
@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
       exploit: result.exploit,
       fix: result.fix,
       verify: result.verify,
+      crossTenant: result.crossTenant,
     });
   } catch (err) {
     console.error('[fuga/api/analyze]', err);

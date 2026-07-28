@@ -399,9 +399,9 @@ function uid() { return Date.now().toString(36) + Math.random().toString(36).sli
 
 // EXAMPLES
 const EXAMPLES = {
-  firestore: `rules_version = '2';\nservice cloud.firestore {\n  match /databases/{db}/documents {\n    match /pacientes/{id} {\n      allow read: if true;\n    }\n    match /pagos/{id} {\n      allow read, write: if true;\n    }\n  }\n}`,
+  firestore: `rules_version = '2';\nservice cloud.firestore {\n  match /databases/{db}/documents {\n    // Fuga pública: cualquiera en internet lee y escribe.\n    match /pagos/{id} {\n      allow read, write: if true;\n    }\n    // Fuga ENTRE USUARIOS: exige login, pero no comprueba el dueño.\n    match /perfiles/{userId} {\n      allow read, write: if request.auth != null;\n    }\n  }\n}`,
   rtdb: `{\n  "rules": {\n    "usuarios": { ".read": true },\n    "pagos": { ".read": true, ".write": true }\n  }\n}`,
-  supabase: `create table pagos (id uuid, user_id uuid, numeroTarjeta text, cvv text);\ncreate table usuarios (id uuid, email text);\nalter table usuarios enable row level security;\ncreate policy public_read on usuarios for select using (true);`
+  supabase: `create table pagos (id uuid, user_id uuid, numeroTarjeta text, cvv text);\ncreate table perfiles (id uuid, user_id uuid, email text, telefono text);\n-- RLS activado, pero cualquier usuario logueado lee TODOS los perfiles (fuga entre usuarios).\nalter table perfiles enable row level security;\ncreate policy perfiles_auth on perfiles for select to authenticated using (true);`
 };
 
 // ═══ SVG CHARTS ═══
@@ -930,7 +930,7 @@ async function startScan() {
     const data = await resp.json();
     // Save project
     const project = state.projects.find(p => p.name === state.wizard.name && p.backend === (data.backend || state.wizard.backend));
-    const scanEntry = { at: new Date().toISOString(), risk: data.scan?.riskScore || 0, grade: getGrade(data.scan?.riskScore || 0), backend: data.backend || state.wizard.backend, scan: data.scan, exploit: data.exploit, fix: data.fix, verify: data.verify };
+    const scanEntry = { at: new Date().toISOString(), risk: data.scan?.riskScore || 0, grade: getGrade(data.scan?.riskScore || 0), backend: data.backend || state.wizard.backend, scan: data.scan, exploit: data.exploit, fix: data.fix, verify: data.verify, crossTenant: data.crossTenant || [] };
     if (project) {
       project.scans.push(scanEntry);
     } else {
@@ -1003,14 +1003,32 @@ function renderReport(){
       <div style="text-align:center">${renderGauge(risk,120)}<div style="font-weight:700;margin-top:4px">Grado ${grade}</div></div>
     </div>
     <div class="card" style="border-left:4px solid ${risk>=75?'var(--danger)':risk>=25?'var(--medium,#EAB308)':'var(--ok)'}"><h3 style="margin:0 0 6px">Veredicto</h3><p style="font-size:1.05rem;margin:0">${verdict}</p><div style="margin-top:12px">${chips}</div></div>
+    ${renderCrossTenant(e.crossTenant)}
     <h3 style="margin:24px 0 8px">Hallazgos</h3>${findings||'<p style="color:var(--muted)">Sin hallazgos.</p>'}
     <h3 style="margin:24px 0 8px">Datos que un atacante puede robar</h3><p style="color:var(--muted);margin:0 0 12px">${ex.leaks?ex.leaks.filter(l=>l.proven).length:0} fugas · ${ex.totalDocsExposed||0} documentos exfiltrables</p>${evidence}
     <h3 style="margin:24px 0 8px">Tu fix</h3>
     <div class="card"><div class="card-title">${ICONS.fix} Reglas endurecidas${fx.source?' ('+escapeHtml(fx.source)+')':''}</div><pre class="code-block" id="fix-code">${escapeHtml(fx.rules||'')}</pre><button class="btn-copy" id="copy-fix">${ICONS.copy} Copiar todo</button></div>
-    ${vf.clean?'<div class="card" style="border-color:var(--ok);background:#F0FBF6"><strong style="color:var(--ok)">'+ICONS.check+' Verificado: aplicando este fix, el atacante anónimo queda bloqueado.</strong></div>':'<div class="card" style="border-color:var(--danger)"><strong style="color:var(--danger)">'+ICONS.alert+' Aún quedan '+(vf.remaining||0)+' fugas.</strong></div>'}
+    ${vf.clean?'<div class="card" style="border-color:var(--ok);background:#F0FBF6"><strong style="color:var(--ok)">'+ICONS.check+' Verificado: con este fix, el atacante anónimo Y cualquier otro usuario ajeno quedan bloqueados. Re-lanzamos el ataque para confirmarlo.</strong></div>':'<div class="card" style="border-color:var(--danger)"><strong style="color:var(--danger)">'+ICONS.alert+' Aún quedan '+(vf.remaining||0)+' fugas.</strong></div>'}
     <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap"><button class="btn-secondary" id="dl-report">${ICONS.download} Descargar reporte</button><button class="btn-secondary" id="toggle-json">Ver datos técnicos</button></div>
     <pre class="code-block" id="raw-json" style="display:none;margin-top:12px">${escapeHtml(JSON.stringify(e,null,2))}</pre>
   </div>`;
+}
+// El diferenciador: fuga ENTRE USUARIOS (un usuario lee/edita datos de otro).
+function renderCrossTenant(leaks){
+  if(!leaks||!leaks.length) return '';
+  const items=leaks.map(l=>{
+    const rec=l.victimData||{};
+    const pii=(l.piiFields||[]);
+    const rows=Object.entries(rec).filter(([k])=>k!=='uid'&&k!=='ownerId'&&k!=='userId').map(([k,v])=>{const p=pii.includes(k);return '<tr><td>'+escapeHtml(k)+'</td><td style="font-family:\'JetBrains Mono\',monospace;'+(p?'color:var(--danger);font-weight:600':'')+'">'+escapeHtml(String(v))+(p?' <span class="badge badge-critical" style="font-size:.58rem">PII</span>':'')+'</td></tr>';}).join('');
+    const verbo=l.method==='read'?'leyó':'modificó';
+    return '<div style="margin-top:14px"><div style="font-weight:600;margin-bottom:6px">'+ICONS.leak+' En <code>'+escapeHtml(l.collection)+'</code>: <span style="color:var(--danger)">Mallory '+verbo+' el registro de Alice</span></div>'
+      +'<div style="font-size:.82rem;color:var(--muted);margin-bottom:6px">Regla que lo permite: <code>'+escapeHtml(l.rule||'')+'</code></div>'
+      +'<table class="data-table"><tbody>'+rows+'</tbody></table></div>';
+  }).join('');
+  return '<div class="card" style="border:2px solid var(--danger);background:#FEF6F6">'
+    +'<div class="card-title" style="color:var(--danger)">'+ICONS.alert+' Fuga entre usuarios — el bug que otros escáneres no ven</div>'
+    +'<p style="margin:0 0 4px">Tu regla exige estar autenticado, pero <strong>no comprueba que seas el dueño del dato</strong>. Cualquier usuario con una cuenta puede alcanzar los registros de los demás. No lo suponemos: lo probamos usando dos cuentas.</p>'
+    +items+'</div>';
 }
 function bindReport(){
   const c=document.getElementById('copy-fix'); if(c) c.onclick=()=>{const el=document.getElementById('fix-code'); if(el){copyText(el.textContent); c.innerHTML=ICONS.check+' Copiado'; setTimeout(()=>c.innerHTML=ICONS.copy+' Copiar todo',1500);} };

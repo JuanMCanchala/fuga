@@ -18,6 +18,15 @@ import type { ExploitReport } from './prove/attacker';
 
 import { parseRtdbRules, analyzeRtdb, proveRtdb, hardenRtdb, rtdbCollections } from './rtdb/engine';
 import { parseSupabase, analyzeSupabase, proveSupabase, hardenSupabase } from './supabase/engine';
+import {
+  proveCrossTenantFirestore,
+  proveCrossTenantSupabase,
+  crossTenantFindings,
+  type TenantLeak,
+  type TenantReport,
+} from './prove/multitenant';
+import { SEVERITY_ORDER } from './scan/types';
+import type { ExploitAttempt } from './prove/attacker';
 
 export type Backend = 'firestore' | 'rtdb' | 'supabase';
 
@@ -49,6 +58,43 @@ export interface RunResult {
   exploit: ExploitReport;
   fix: { rules: string; source: string; validated: boolean };
   verify: { clean: boolean; remaining: number };
+  /** Fugas ENTRE USUARIOS probadas (IDOR / cross-tenant). El diferenciador. */
+  crossTenant: TenantLeak[];
+}
+
+/**
+ * Funde las fugas entre usuarios en los reportes de scan y exploit: los
+ * hallazgos IDOR van primero (son el titular), la evidencia de Alice se suma a
+ * lo exfiltrado, y el riesgo sube a crítico si hay PII de por medio.
+ */
+function mergeCrossTenant(scan: ScanReport, exploit: ExploitReport, tenant: TenantReport): void {
+  if (!tenant.leaks.length) return;
+  const findings = crossTenantFindings(tenant);
+  scan.findings = [...findings, ...scan.findings];
+  scan.findings.sort((a, b) => SEVERITY_ORDER[b.severity] - SEVERITY_ORDER[a.severity]);
+
+  const summary = { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
+  for (const f of scan.findings) summary[f.severity]++;
+  scan.summary = summary;
+
+  const hasCrit = findings.some((f) => f.severity === 'critical');
+  scan.riskScore = Math.min(100, Math.max(scan.riskScore, hasCrit ? 100 : 80));
+
+  for (const l of tenant.leaks) {
+    const attempt: ExploitAttempt = {
+      collection: l.collection,
+      path: l.collection,
+      method: l.method,
+      verdict: 'ALLOW',
+      proven: true,
+      exfiltrated: l.method === 'read' && l.victimData ? [l.victimData] : undefined,
+      piiFields: l.piiFields,
+    };
+    exploit.attempts.push(attempt);
+    exploit.leaks.push(attempt);
+  }
+  exploit.totalDocsExposed += tenant.leaks.filter((l) => l.method === 'read').length;
+  exploit.clean = exploit.leaks.length === 0;
 }
 
 export interface RunOptions {
@@ -71,7 +117,8 @@ export async function runFuga(opts: RunOptions): Promise<RunResult> {
     const exploit = proveRtdb(ast, db);
     const fix = hardenRtdb(targets);
     const verify = proveRtdb(parseRtdbRules(fix.rules), db);
-    return { backend, llm: 'none', targets, scan, exploit, fix, verify: { clean: verify.clean, remaining: verify.leaks.length } };
+    // El motor cross-tenant de RTDB llega en la próxima iteración.
+    return { backend, llm: 'none', targets, scan, exploit, fix, verify: { clean: verify.clean, remaining: verify.leaks.length }, crossTenant: [] };
   }
 
   if (backend === 'supabase') {
@@ -80,9 +127,14 @@ export async function runFuga(opts: RunOptions): Promise<RunResult> {
     const scan = analyzeSupabase(sb, schema);
     const db = opts.seed ?? synthSeedFor(targets, schema);
     const exploit = proveSupabase(sb, db);
+    const tenant = proveCrossTenantSupabase(sb, schema);
+    mergeCrossTenant(scan, exploit, tenant);
     const fix = hardenSupabase(sb);
-    const verify = proveSupabase(parseSupabase(fix.rules), db);
-    return { backend, llm: 'none', targets, scan, exploit, fix, verify: { clean: verify.clean, remaining: verify.leaks.length } };
+    const hardenedSb = parseSupabase(fix.rules);
+    const verifyAnon = proveSupabase(hardenedSb, db);
+    const verifyTenant = proveCrossTenantSupabase(hardenedSb, schema);
+    const remaining = verifyAnon.leaks.length + verifyTenant.leaks.length;
+    return { backend, llm: 'none', targets, scan, exploit, fix, verify: { clean: remaining === 0, remaining }, crossTenant: tenant.leaks };
   }
 
   // Firestore (con LLM opcional para el fix).
@@ -91,10 +143,15 @@ export async function runFuga(opts: RunOptions): Promise<RunResult> {
   const scan = analyze(ast, { schema });
   const db = opts.seed ?? (codeCollections.length ? synthSeed(schema) : synthSeedFor(collectionsFromFirestore(opts.rules), schema));
   const exploit = prove(ast, { db, schema });
+  const tenant = proveCrossTenantFirestore(ast, schema);
+  mergeCrossTenant(scan, exploit, tenant);
   const provider = await selectProvider();
   const collections = codeCollections.length ? codeCollections : collectionsFromFirestore(opts.rules);
   const fix = await harden({ originalRules: opts.rules, collections, schema, provider });
-  const verify = prove(parseRules(fix.rules), { db, schema });
+  const hardenedAst = parseRules(fix.rules);
+  const verifyAnon = prove(hardenedAst, { db, schema });
+  const verifyTenant = proveCrossTenantFirestore(hardenedAst, schema);
+  const remaining = verifyAnon.leaks.length + verifyTenant.leaks.length;
   return {
     backend,
     llm: provider.name,
@@ -102,7 +159,8 @@ export async function runFuga(opts: RunOptions): Promise<RunResult> {
     scan,
     exploit,
     fix: { rules: fix.rules, source: fix.source, validated: fix.validated },
-    verify: { clean: verify.clean, remaining: verify.leaks.length },
+    verify: { clean: remaining === 0, remaining },
+    crossTenant: tenant.leaks,
   };
 }
 

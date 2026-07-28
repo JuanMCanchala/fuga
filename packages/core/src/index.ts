@@ -75,6 +75,16 @@ export type { SupabaseSchema, TableModel, Policy } from './supabase/engine';
 export { rtdbCollections } from './rtdb/engine';
 export { synthSeedFor } from './prove/seed';
 
+// Fuga entre usuarios (IDOR / cross-tenant) — el diferenciador
+export {
+  proveCrossTenantFirestore,
+  proveCrossTenantSupabase,
+  crossTenantFindings,
+  VICTIM_UID,
+  ATTACKER_UID,
+} from './prove/multitenant';
+export type { TenantLeak, TenantReport } from './prove/multitenant';
+
 // Dispatcher multi-backend
 export { runFuga, detectBackend } from './backends';
 export type { Backend, RunResult, RunOptions } from './backends';
