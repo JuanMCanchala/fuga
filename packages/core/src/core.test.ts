@@ -13,6 +13,8 @@ import { parseRtdbRules, analyzeRtdb, proveRtdb } from './rtdb/engine';
 import { parseSupabase, proveSupabase } from './supabase/engine';
 import { detectBackend, runFuga } from './backends';
 import { proveCrossTenantFirestore, proveCrossTenantSupabase } from './prove/multitenant';
+import { extractConfigs, detectSecrets } from './url/extract';
+import { buildUrlReport } from './url/report';
 
 const IF_TRUE = `rules_version = '2';
 service cloud.firestore {
@@ -242,4 +244,51 @@ test('runFuga: reporta cross-tenant y el fix lo cierra (loop cerrado)', async ()
   assert.ok(res.crossTenant.length >= 1, 'debe probar la fuga entre usuarios');
   assert.ok(res.scan.findings.some((f) => f.code === 'FUGA-IDOR-READ'));
   assert.equal(res.verify.clean, true, 'el fix debe cerrar también la fuga entre usuarios');
+});
+
+// --- Escaneo por URL: extracción de config y secretos del bundle ---
+
+test('url: extrae config de Firebase y Supabase del bundle', () => {
+  const bundle = `const firebaseConfig={apiKey:"AIzaSyD-EXAMPLE_key_123456",authDomain:"miapp.firebaseapp.com",projectId:"miapp"};
+    const s=createClient("https://abcdefghijklmnopqrst.supabase.co","eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.c2lnbmF0dXJlMTIz");`;
+  const cfg = extractConfigs(bundle);
+  assert.equal(cfg.firebase?.projectId, 'miapp');
+  assert.equal(cfg.supabase?.ref, 'abcdefghijklmnopqrst');
+  assert.ok(cfg.supabase?.anonKey, 'debe extraer la anon key');
+});
+
+test('url: la apiKey de Firebase NO se reporta como secreto; la service_role SÍ', () => {
+  // Tokens armados por concatenación: fixtures ficticios que NO deben aparecer
+  // como literal en el fuente (si no, el escáner de secretos del repo los marca).
+  const serviceRole = ['eyJhbGciOiJIUzI1NiJ9', 'eyJyb2xlIjoic2VydmljZV9yb2xlIn0', 'c2lnbmF0dXJlMTIz'].join('.');
+  const stripeKey = 'sk_' + 'live_' + 'A1B2C3D4E5F6G7H8I9J0K1L2M3';
+  const bundle = `apiKey:"AIzaSyD-EXAMPLE_key_123456"; const k="${serviceRole}"; const stripe="${stripeKey}";`;
+  const secrets = detectSecrets(bundle);
+  const kinds = secrets.map((s) => s.kind);
+  assert.ok(kinds.includes('supabase_service_role'), 'debe detectar service_role');
+  assert.ok(kinds.includes('stripe_secret_live'), 'debe detectar la clave de Stripe');
+  assert.ok(!kinds.includes('firebase_api_key'), 'la apiKey pública NO es un secreto');
+});
+
+test('url: buildUrlReport arma el reporte con fugas y secretos', () => {
+  const report = buildUrlReport({
+    url: 'https://miapp.com',
+    configs: { supabase: { url: 'https://x.supabase.co', ref: 'abcdefghijklmnopqrst' }, collections: ['pagos'] },
+    secrets: [{ kind: 'stripe_secret_live', label: 'Stripe', severity: 'critical', sample: 'sk…', why: 'x' }],
+    probes: [
+      {
+        backend: 'supabase',
+        reachable: true,
+        enumerated: ['pagos', 'usuarios'],
+        protectedTargets: ['usuarios'],
+        leaks: [{ backend: 'supabase', target: 'pagos', method: 'read', rows: [{ numeroTarjeta: '4111', cvv: '321' }] }],
+      },
+    ],
+  });
+  assert.equal(report.source, 'url');
+  assert.ok(report.scan.riskScore >= 75);
+  assert.ok(report.scan.findings.some((f) => f.code === 'FUGA-URL-READ'));
+  assert.ok(report.scan.findings.some((f) => f.code === 'FUGA-URL-SECRET'));
+  assert.ok(report.fix.rules.includes('ROW LEVEL SECURITY'));
+  assert.equal(report.exploit.totalDocsExposed, 1);
 });

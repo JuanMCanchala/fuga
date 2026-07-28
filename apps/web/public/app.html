@@ -803,8 +803,31 @@ function renderDashboard() {
 }
 
 // ═══ NEW SCAN WIZARD ═══
+function renderModeToggle(mode){
+  const btn=(m,label)=>`<button class="scan-mode-btn${mode===m?' active':''}" data-mode="${m}" style="flex:1;padding:9px;border:1px solid var(--border);background:${mode===m?'var(--surface)':'var(--bg)'};font-weight:600;font-size:.85rem;color:${mode===m?'var(--ink)':'var(--muted)'};border-radius:8px;cursor:pointer">${label}</button>`;
+  return `<div style="display:flex;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:4px;max-width:420px;margin-bottom:20px">${btn('url','Escanear por URL')}${btn('rules','Pegar reglas · recomendado')}</div>`;
+}
+function renderUrlScan(){
+  const w=state.wizard;
+  if(state.loading){
+    return `<div class="card" style="text-align:center;padding:44px 0"><h3 style="margin-bottom:16px">Escaneando tu app…</h3><div class="spinner" style="margin:0 auto 16px"></div><p style="color:var(--muted)">Bajando el bundle, extrayendo la config de Firebase/Supabase y probando tu backend en vivo…</p></div>`;
+  }
+  return `<div class="card">
+    <h3 style="margin-bottom:4px">Escanear por URL</h3>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px">Pega el link de tu app desplegada. Sacamos la config de Firebase o Supabase de tu propio código y probamos tu backend en vivo — sin que toques nada.</p>
+    <div class="login-field"><label for="scan-url">URL de tu app</label><input type="url" id="scan-url" placeholder="https://mi-app.vercel.app" value="${escapeHtml(w.url||'')}"></div>
+    <button class="btn-primary" id="btn-url-scan" style="width:auto;padding:12px 28px">Escanear ahora</button>
+    <div style="margin-top:18px;padding:12px 14px;background:var(--accent-light);border-radius:10px;font-size:.82rem;line-height:1.5;color:var(--ink)">
+      <strong>FUGA funciona mejor con Firestore, Realtime Database y Supabase pegando tus reglas.</strong> Ahí hace el análisis completo, incluida la <strong>fuga entre usuarios</strong>. El escaneo por URL es best-effort: solo ve lo que tu bundle expone y lo que tu backend responde sin autenticación. <a href="#" id="to-rules" style="color:var(--accent);font-weight:600">Pegar reglas &rarr;</a>
+    </div>
+  </div>`;
+}
 function renderNewScan() {
   const w = state.wizard;
+  const mode = w.mode || 'rules';
+  if (mode === 'url') {
+    return `<div><h2 style="margin-bottom:24px">Nuevo escaneo</h2>${renderModeToggle(mode)}${renderUrlScan()}</div>`;
+  }
   const stepsInfo = [{ n: 1, l: 'Backend' }, { n: 2, l: 'Reglas' }, { n: 3, l: 'Escanear' }];
   const stepsHtml = stepsInfo.map((s, i) => {
     const cls = w.step === s.n ? 'active' : (w.step > s.n ? 'done' : '');
@@ -875,6 +898,7 @@ function renderNewScan() {
 
   return `<div>
     <h2 style="margin-bottom:24px">Nuevo escaneo</h2>
+    ${renderModeToggle('rules')}
     <div class="card">
       <div class="wizard-steps">${stepsHtml}</div>
       ${body}
@@ -883,6 +907,12 @@ function renderNewScan() {
 }
 
 function bindNewScan() {
+  // Toggle de modo (URL / reglas)
+  document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { state.wizard.mode = b.dataset.mode; render(); });
+  const toRules = document.getElementById('to-rules');
+  if (toRules) toRules.onclick = e => { e.preventDefault(); state.wizard.mode = 'rules'; state.wizard.step = 1; render(); };
+  const urlBtn = document.getElementById('btn-url-scan');
+  if (urlBtn) urlBtn.onclick = () => startUrlScan();
   // Step 1
   document.querySelectorAll('[data-backend]').forEach(el => {
     el.onclick = () => { state.wizard.backend = el.dataset.backend; render(); };
@@ -959,6 +989,29 @@ async function startScan() {
   }
 }
 
+// Escaneo por URL: baja el bundle y prueba el backend en vivo.
+async function startUrlScan() {
+  const input = document.getElementById('scan-url');
+  const url = (input?.value || '').trim();
+  if (!url) { alert('Pega la URL de tu app para escanear.'); return; }
+  state.wizard.url = url; state.loading = true; render();
+  try {
+    const resp = await fetch('/api/scan-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
+    const data = await resp.json();
+    state.loading = false;
+    if (data && data.error === 'no-backend') { alert(data.message); render(); return; }
+    if (!resp.ok || (data && data.error)) { alert('No se pudo escanear: ' + ((data && (data.message || data.error)) || resp.status)); render(); return; }
+    let name = url; try { name = new URL(url.match(/^https?:\/\//i) ? url : 'https://' + url).hostname; } catch (e) {}
+    const bk = (data.backend === 'supabase' || data.backend === 'rtdb' || data.backend === 'firestore') ? data.backend : 'firestore';
+    const scanEntry = { at: new Date().toISOString(), risk: data.scan?.riskScore || 0, grade: getGrade(data.scan?.riskScore || 0), backend: bk, scan: data.scan, exploit: data.exploit, fix: data.fix, verify: data.verify, crossTenant: [], secrets: data.secrets || [], advisory: data.advisory, source: 'url', target: data.target };
+    state.projects.push({ id: uid(), name, backend: bk, rules: '', code: '', createdAt: new Date().toISOString(), scans: [scanEntry] });
+    saveProjects();
+    state.activeReport = { project: name, scan: scanEntry, backend: bk };
+    state.wizard = { step: 1, backend: null, name: '', rules: '', code: '', mode: 'url' };
+    navigate('report');
+  } catch (err) { state.loading = false; alert('Error al escanear la URL: ' + err.message); render(); }
+}
+
 // ═══ HELPERS AÑADIDOS ═══
 function escapeHtml(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function sevLabel(s){return {critical:'Crítico',high:'Alto',medium:'Medio',low:'Bajo',info:'Info'}[s]||s;}
@@ -1013,6 +1066,8 @@ function renderReport(){
     </div>
     <div class="card" style="border-left:4px solid ${risk>=75?'var(--danger)':risk>=25?'var(--medium,#EAB308)':'var(--ok)'}"><h3 style="margin:0 0 6px">Veredicto</h3><p style="font-size:1.05rem;margin:0">${verdict}</p><div style="margin-top:12px">${chips}</div></div>
     ${renderCrossTenant(e.crossTenant)}
+    ${renderSecrets(e.secrets)}
+    ${e.advisory?'<div class="card" style="border-color:var(--accent);background:var(--accent-light)"><p style="margin:0;font-size:.85rem">'+ICONS.shield+' <strong>Escaneo por URL.</strong> '+escapeHtml(e.advisory)+'</p></div>':''}
     <h3 style="margin:24px 0 8px">Hallazgos</h3>${findings||'<p style="color:var(--muted)">Sin hallazgos.</p>'}
     <h3 style="margin:24px 0 8px">Datos que un atacante puede robar</h3><p style="color:var(--muted);margin:0 0 12px">${ex.leaks?ex.leaks.filter(l=>l.proven).length:0} fugas · ${ex.totalDocsExposed||0} documentos exfiltrables</p>${evidence}
     <h3 style="margin:24px 0 8px">Tu fix</h3>
@@ -1038,6 +1093,12 @@ function renderCrossTenant(leaks){
     +'<div class="card-title" style="color:var(--danger)">'+ICONS.alert+' Fuga entre usuarios — el bug que otros escáneres no ven</div>'
     +'<p style="margin:0 0 4px">Tu regla exige estar autenticado, pero <strong>no comprueba que seas el dueño del dato</strong>. Cualquier usuario con una cuenta puede alcanzar los registros de los demás. No lo suponemos: lo probamos usando dos cuentas.</p>'
     +items+'</div>';
+}
+// Secretos filtrados en el bundle (solo escaneo por URL).
+function renderSecrets(secrets){
+  if(!secrets||!secrets.length) return '';
+  const rows=secrets.map(s=>'<tr><td><span class="badge badge-'+(s.severity||'high')+'">'+sevLabel(s.severity)+'</span></td><td><strong>'+escapeHtml(s.label)+'</strong><br><span style="color:var(--muted);font-size:.8rem">'+escapeHtml(s.why||'')+'</span></td><td style="font-family:\'JetBrains Mono\',monospace;color:var(--danger)">'+escapeHtml(s.sample||'')+'</td></tr>').join('');
+  return '<div class="card xtenant" style="border:2px solid var(--danger);background:#FEF6F6;margin-top:16px"><div class="card-title" style="color:var(--danger)">'+ICONS.alert+' Claves secretas expuestas en tu frontend</div><p style="margin:0 0 10px;font-size:.86rem">Estas claves NO deberían salir del servidor y están en el código que descarga cualquiera. Rótalas ya.</p><table class="data-table"><tbody>'+rows+'</tbody></table></div>';
 }
 function bindReport(){
   const c=document.getElementById('copy-fix'); if(c) c.onclick=()=>{const el=document.getElementById('fix-code'); if(el){copyText(el.textContent); c.innerHTML=ICONS.check+' Copiado'; setTimeout(()=>c.innerHTML=ICONS.copy+' Copiar todo',1500);} };

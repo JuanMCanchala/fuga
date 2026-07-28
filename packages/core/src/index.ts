@@ -85,6 +85,20 @@ export {
 } from './prove/multitenant';
 export type { TenantLeak, TenantReport } from './prove/multitenant';
 
+// Escaneo por URL (extracción de config/secretos del bundle + reporte)
+export {
+  extractConfigs,
+  extractFirebaseConfig,
+  extractSupabaseConfig,
+  extractCollections,
+  detectSecrets,
+  decodeJwtPayload,
+  mask,
+} from './url/extract';
+export type { ExtractedConfigs, FirebaseConfig, SupabaseConfig, DetectedSecret } from './url/extract';
+export { buildUrlReport } from './url/report';
+export type { UrlReport, UrlScanInput, UrlProbeResult, UrlProbeLeak } from './url/report';
+
 // Dispatcher multi-backend
 export { runFuga, detectBackend } from './backends';
 export type { Backend, RunResult, RunOptions } from './backends';
