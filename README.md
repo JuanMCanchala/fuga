@@ -29,6 +29,28 @@ Con eso, **cualquier persona en Internet** puede leer y escribir toda tu base de
 datos: tarjetas, cédulas, mensajes privados. Los linters existentes solo dicen
 "esto parece inseguro" — y el desarrollador lo ignora porque no ve el impacto.
 
+## El diferenciador: fuga entre usuarios (IDOR)
+
+Todos los escáneres detectan lo obvio: "la regla es pública" o "el RLS está
+apagado". El bug **difícil** —el que expuso apps de Supabase en masa
+([CVE-2025-48757](https://nvd.nist.gov/)) y que ningún linter ve— es otro: la
+regla **sí** exige estar autenticado, pero no comprueba que seas el **dueño**
+del dato.
+
+```
+match /perfiles/{userId} { allow read, write: if request.auth != null; }
+```
+
+Un atacante anónimo obtiene DENY, así que el análisis clásico dice "seguro".
+FUGA no ataca como anónimo: ataca como **un segundo usuario legítimo**. Crea a
+"Mallory" (una cuenta cualquiera) y demuestra que puede leer y modificar el
+registro de "Alice". La regla estaba autenticada pero no acotada al dueño:
+**fuga entre usuarios, probada** — con la evidencia. Luego genera el fix por
+dueño y **re-lanza el ataque** para confirmar que Mallory ya no entra.
+
+Ningún competidor prueba esto: requiere ejecutar el ataque con dos identidades,
+no coincidencia de patrones.
+
 ## La diferencia de FUGA
 
 FUGA **ejecuta el ataque**. No opina: prueba.
@@ -158,7 +180,7 @@ tasks) y el steering en [`.kiro/steering/`](./.kiro/steering/).
 ## Pruebas
 
 ```bash
-npm test   # 10 pruebas de node:test sobre el core
+npm test   # 23 pruebas de node:test sobre el core
 ```
 
 ## Reto

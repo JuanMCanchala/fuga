@@ -53,11 +53,30 @@ Ordenado por impacto para nuestro usuario objetivo.
 10. **Reporte compartible / PDF / badge público.**
 11. **Planes de pago y onboarding comercial** ya montados.
 
+## El diferenciador que elegimos: fuga ENTRE USUARIOS (IDOR)
+
+El mercado está plagado de escáneres, sí — pero **todos hacen lo mismo**:
+detectan la puerta abierta (regla pública, RLS apagado). Ninguno prueba el bug
+difícil: reglas que **exigen login pero no comprueban el dueño**, dejando que
+cualquier usuario con cuenta lea o edite los datos de los demás. Es la clase de
+fallo del CVE-2025-48757 (exposición masiva de apps Supabase) y no se detecta con
+coincidencia de patrones: hay que **ejecutar el ataque con dos identidades**.
+
+FUGA crea a "Mallory" (una cuenta cualquiera) y demuestra que accede al registro
+de "Alice", genera el fix acotado al dueño y re-lanza el ataque para confirmar el
+cierre. Un atacante anónimo obtiene DENY, así que los 8 competidores dicen
+"seguro" y siguen de largo. **Esto es lo que nos saca de la categoría "scanner
+#9".** Implementado y probado para Firestore y Supabase (RTDB en camino); 23
+tests en verde. Bonus: el propio generador de fix de FUGA tenía este mismo bug
+en su plantilla de perfiles — el verificador cross-tenant lo cazó.
+
 ## Lo que nosotros tenemos y ninguno tiene
 
 Esto es el foso, y conviene decirlo así de directo en la presentación:
 
-1. **Prueba real de explotación con datos exfiltrados.** Todos concluyen "te falta
+1. **Prueba de fuga ENTRE USUARIOS (IDOR).** Ver arriba: el bug que ninguno de
+   los 8 detecta. Nuestro sello.
+2. **Prueba real de explotación con datos exfiltrados.** Todos concluyen "te falta
    RLS" o "tus reglas están abiertas". **FUGA ejecuta el ataque y te muestra los
    registros que se llevaría.** Ninguno enseña el botín. Es la diferencia entre un
    linter y una demostración.
