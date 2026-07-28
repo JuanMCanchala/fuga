@@ -171,6 +171,11 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 .verify-banner.clean{background:#D1FAE5;border:1px solid #6EE7B7;color:#065F46}
 .verify-banner.dirty{background:#FEE2E2;border:1px solid #FCA5A5;color:#7F1D1D}
 .verify-banner svg{width:20px;height:20px;flex-shrink:0}
+/* Iconos en línea que antes se estiraban a pantalla completa (sin tamaño fijo) */
+.card-title svg{width:18px;height:18px;vertical-align:-4px;flex-shrink:0}
+.xtenant svg{width:16px;height:16px;vertical-align:-3px;flex-shrink:0}
+.verify-result svg{width:20px;height:20px;vertical-align:-5px;flex-shrink:0}
+.btn-copy svg,.btn-secondary svg,.report-view .btn-primary svg{width:15px;height:15px;vertical-align:-3px;flex-shrink:0}
 
 /* WIZARD */
 .wizard-steps{display:flex;align-items:center;gap:8px;margin-bottom:32px}
@@ -1012,7 +1017,7 @@ function renderReport(){
     <h3 style="margin:24px 0 8px">Datos que un atacante puede robar</h3><p style="color:var(--muted);margin:0 0 12px">${ex.leaks?ex.leaks.filter(l=>l.proven).length:0} fugas · ${ex.totalDocsExposed||0} documentos exfiltrables</p>${evidence}
     <h3 style="margin:24px 0 8px">Tu fix</h3>
     <div class="card"><div class="card-title">${ICONS.fix} Reglas endurecidas${fx.source?' ('+escapeHtml(fx.source)+')':''}</div><pre class="code-block" id="fix-code">${escapeHtml(fx.rules||'')}</pre><button class="btn-copy" id="copy-fix">${ICONS.copy} Copiar todo</button></div>
-    ${vf.clean?'<div class="card" style="border-color:var(--ok);background:#F0FBF6"><strong style="color:var(--ok)">'+ICONS.check+' Verificado: con este fix, el atacante anónimo Y cualquier otro usuario ajeno quedan bloqueados. Re-lanzamos el ataque para confirmarlo.</strong></div>':'<div class="card" style="border-color:var(--danger)"><strong style="color:var(--danger)">'+ICONS.alert+' Aún quedan '+(vf.remaining||0)+' fugas.</strong></div>'}
+    ${vf.clean?'<div class="card verify-result" style="border-color:var(--ok);background:#F0FBF6"><strong style="color:var(--ok)">'+ICONS.check+' Verificado: con este fix, el atacante anónimo Y cualquier otro usuario ajeno quedan bloqueados. Re-lanzamos el ataque para confirmarlo.</strong></div>':'<div class="card verify-result" style="border-color:var(--danger)"><strong style="color:var(--danger)">'+ICONS.alert+' Aún quedan '+(vf.remaining||0)+' fugas.</strong></div>'}
     <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap"><button class="btn-secondary" id="dl-report">${ICONS.download} Descargar reporte</button><button class="btn-secondary" id="toggle-json">Ver datos técnicos</button></div>
     <pre class="code-block" id="raw-json" style="display:none;margin-top:12px">${escapeHtml(JSON.stringify(e,null,2))}</pre>
   </div>`;
@@ -1029,7 +1034,7 @@ function renderCrossTenant(leaks){
       +'<div style="font-size:.82rem;color:var(--muted);margin-bottom:6px">Regla que lo permite: <code>'+escapeHtml(l.rule||'')+'</code></div>'
       +'<table class="data-table"><tbody>'+rows+'</tbody></table></div>';
   }).join('');
-  return '<div class="card" style="border:2px solid var(--danger);background:#FEF6F6">'
+  return '<div class="card xtenant" style="border:2px solid var(--danger);background:#FEF6F6">'
     +'<div class="card-title" style="color:var(--danger)">'+ICONS.alert+' Fuga entre usuarios — el bug que otros escáneres no ven</div>'
     +'<p style="margin:0 0 4px">Tu regla exige estar autenticado, pero <strong>no comprueba que seas el dueño del dato</strong>. Cualquier usuario con una cuenta puede alcanzar los registros de los demás. No lo suponemos: lo probamos usando dos cuentas.</p>'
     +items+'</div>';
